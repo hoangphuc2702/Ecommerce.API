@@ -14,7 +14,7 @@ namespace Ecommerce.API.Endpoints
             var group = app.MapGroup("api/v1/auth")
                            .WithTags("Authentication");
 
-            group.MapPost("register", async ([FromBody] RegisterCommand command, [FromServices] ISender sender) =>
+            group.MapPost("register", async ([FromBody] RegisterCommand command, ISender sender) =>
             {
                 var userId = await sender.Send(command);
 
@@ -25,7 +25,7 @@ namespace Ecommerce.API.Endpoints
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status409Conflict);
 
-            group.MapPost("login", async ([FromBody] LoginQuery query, [FromServices] ISender sender) =>
+            group.MapPost("login", async ([FromBody] LoginQuery query, ISender sender) =>
             {
                 var response = await sender.Send(query);
                 return Results.Ok(response);
@@ -33,7 +33,25 @@ namespace Ecommerce.API.Endpoints
             .WithName("LoginUser")
             .Produces<LoginResponse>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status401Unauthorized);
+
+            group.MapPost("refreshtoken", async ([FromBody] RefreshTokenCommand command, ISender sender) =>
+            {
+                var response = await sender.Send(command);
+                return Results.Ok(response);
+            })
+            .WithName("RefreshToken")
+            .Produces<LoginResponse>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status401Unauthorized);
+
+            group.MapPost("logout", async ([FromBody] LogoutCommand command, ISender sender) =>
+            {
+                var response = await sender.Send(command);
+                return Results.Ok(response);
+            })
+            .WithName("LogoutUser")
+            .Produces<LoginResponse>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized);
         }

@@ -66,4 +66,15 @@ public class JwtTokenService : ITokenService
         rng.GetBytes(randomNumber);
         return Convert.ToBase64String(randomNumber);
     }
+
+    public void DeleteTokenCookie(string token)
+    {
+        _httpContextAccessor.HttpContext?.Response.Cookies.Delete(token, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Strict,
+            Expires = DateTime.UtcNow.AddDays(-1)
+        });
+    }
 }

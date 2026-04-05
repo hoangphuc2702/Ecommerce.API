@@ -10,5 +10,6 @@ namespace Ecommerce.Application.Interfaces
         string GenerateToken(User user);
         string GenerateRefreshToken();
         void WriteTokenToCookie(string name, string token, DateTime expiry);
+        void DeleteTokenCookie(string token);
     }
 }
