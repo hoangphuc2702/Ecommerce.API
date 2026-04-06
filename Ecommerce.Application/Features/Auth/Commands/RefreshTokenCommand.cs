@@ -10,7 +10,7 @@ using System.Text;
 
 namespace Ecommerce.Application.Features.Auth.Commands
 {
-    public record RefreshTokenCommand(string refreshToken) : IRequest<string>;
+    public record RefreshTokenCommand : IRequest<string>;
 
     public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, string>
     {
@@ -30,7 +30,7 @@ namespace Ecommerce.Application.Features.Auth.Commands
             var oldRefreshToken = _httpContextAccessor.HttpContext?.Request.Cookies["REFRESH_TOKEN"];
 
             if (string.IsNullOrEmpty(oldRefreshToken))
-                throw new UnauthorizedException("Refresh Token is missing.");
+                throw new UnauthorizedException("Your login session has expired, please log in again.");
 
             var user = await _context.Users.FirstOrDefaultAsync(u => u.RefreshToken == oldRefreshToken, cancellationToken);
 

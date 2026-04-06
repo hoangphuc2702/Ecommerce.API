@@ -8,7 +8,7 @@ using System.Text;
 
 namespace Ecommerce.Application.Features.Auth.Commands
 {
-    public record LogoutCommand(string refreshToken) : IRequest<string>;
+    public record LogoutCommand : IRequest<string>;
 
     public class LogoutCommandHandler : IRequestHandler<LogoutCommand, string>
     {

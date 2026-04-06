@@ -35,9 +35,9 @@ namespace Ecommerce.API.Endpoints
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized);
 
-            group.MapPost("refreshtoken", async ([FromBody] RefreshTokenCommand command, ISender sender) =>
+            group.MapPost("refreshtoken", async (ISender sender) =>
             {
-                var response = await sender.Send(command);
+                var response = await sender.Send(new RefreshTokenCommand());
                 return Results.Ok(response);
             })
             .WithName("RefreshToken")
@@ -45,9 +45,9 @@ namespace Ecommerce.API.Endpoints
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized);
 
-            group.MapPost("logout", async ([FromBody] LogoutCommand command, ISender sender) =>
+            group.MapPost("logout", async (ISender sender) =>
             {
-                var response = await sender.Send(command);
+                var response = await sender.Send(new LogoutCommand());
                 return Results.Ok(response);
             })
             .WithName("LogoutUser")
