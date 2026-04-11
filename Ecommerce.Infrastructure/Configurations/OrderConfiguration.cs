@@ -27,6 +27,21 @@ namespace Ecommerce.Infrastructure.Configurations
                 .HasConversion<string>()
                 .HasMaxLength(20)
                 .IsRequired();
+            builder.Property(o => o.DiscountAmount)
+                .HasPrecision(18, 2);
+
+            builder.Property(o => o.SubTotal)
+                .HasPrecision(18, 2);
+
+            builder.Property(o => o.PaymentStatus)
+            .HasConversion<string>()
+            .HasMaxLength(20)
+            .IsRequired()
+            .HasDefaultValue(Ecommerce.Domain.Enums.PaymentStatus.Pending);
+
+            builder.Property(o => o.ZaloPayTransId)
+            .HasMaxLength(100)
+            .IsRequired(false);
 
             builder.Property(o => o.OrderDate)
                 .IsRequired();

@@ -60,16 +60,18 @@ public class AddToCartCommandHandler : IRequestHandler<AddToCartCommand, Guid>
             _context.Carts.Add(cart);
         }
 
-        var existingItem = cart.Items.FirstOrDefault(x => x.ProductId == request.ProductId);
+        var existingItem = cart.Items
+            .FirstOrDefault(x => x.ProductId == request.ProductId);
 
         if (existingItem != null)
         {
-            int updatedQuantity = existingItem.Quantity + request.Quantity;
-            if (updatedQuantity > product.Stock)
-            {
-                throw new BadRequestException("Total quantity exceeds available stock.");
-            }
-            existingItem.Quantity = updatedQuantity;
+            //int updatedQuantity = existingItem.Quantity + request.Quantity;
+            //if (updatedQuantity > product.Stock)
+            //{
+            //    throw new BadRequestException("Total quantity exceeds available stock.");
+            //}
+            //existingItem.Quantity = updatedQuantity;
+            existingItem.Quantity += request.Quantity;
         }
         else
         {
@@ -81,12 +83,13 @@ public class AddToCartCommandHandler : IRequestHandler<AddToCartCommand, Guid>
             });
         }
 
-        var result = await _unitOfWork.SaveChangesAsync(cancellationToken);
+        //var result = 
+          await _context.SaveChangesAsync(cancellationToken);
 
-        if (result <= 0)
-        {
-            _logger.LogError("Failed to save cart changes for User: {UserId}", userId.Value);
-        }
+        //if (result <= 0)
+        //{
+        //    _logger.LogError("Failed to save cart changes for User: {UserId}", userId.Value);
+        //}
 
         return cart.Id;
     }

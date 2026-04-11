@@ -1,4 +1,5 @@
-﻿using Ecommerce.Application.Features.Category.Commands;
+﻿using Ecommerce.Application.Common.Models;
+using Ecommerce.Application.Features.Category.Commands;
 using Ecommerce.Application.Features.Category.DTOs;
 using Ecommerce.Application.Features.Category.Queries;
 using MediatR;
@@ -47,13 +48,13 @@ public static class CategoryEndpoints
         group.MapPut("/{id:guid}", async (Guid id, UpdateCategoryRequest request, ISender sender) =>
         {
             var command = new UpdateCategoryCommand(id, request.Name, request.Description);
-            await sender.Send(command);
+            var result = await sender.Send(command);
 
-            return Results.NoContent();
+            return Results.Ok(result);
         })
         .RequireAuthorization(policy => policy.RequireRole("Admin"))
         .WithName("UpdateCategory")
-        .Produces(StatusCodes.Status204NoContent)
+        .Produces<Result<CategoryDto>>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status404NotFound);
 

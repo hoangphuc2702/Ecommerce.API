@@ -41,7 +41,7 @@ namespace Ecommerce.API.Handlers
                 NotFoundException nfEx => (HttpStatusCode.NotFound, nfEx.Message, null),
                 BadRequestException badEx => (HttpStatusCode.BadRequest, badEx.Message, null),
                 UnauthorizedException unAuthEx => (HttpStatusCode.Unauthorized, unAuthEx.Message, null),
-                ForbiddenException badEx => (HttpStatusCode.BadRequest, badEx.Message, null),
+                ForbiddenException badEx => (HttpStatusCode.Forbidden, badEx.Message, null),
 
                 LoginFailedException => (HttpStatusCode.Unauthorized, exception.Message, null),
                 UserAlreadyExistsException => (HttpStatusCode.Conflict, exception.Message, null),

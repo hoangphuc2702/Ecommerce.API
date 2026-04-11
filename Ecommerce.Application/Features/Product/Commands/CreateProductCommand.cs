@@ -9,8 +9,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Ecommerce.Application.Features.Product.Commands
 {
-    public record CreateProductRequest(string Name, decimal Price, string? Description, Guid CategoryId);
-    public record CreateProductCommand(string Name, decimal Price, string? Description, Guid CategoryId) : IRequest<Guid>;
+    public record CreateProductRequest(string Name, decimal Price, string? Description, int Stock, Guid CategoryId);
+    public record CreateProductCommand(string Name, decimal Price, string? Description, int Stock, Guid CategoryId) : IRequest<Guid>;
 
     public class CreateProductCommandHandler : IRequestHandler<CreateProductCommand, Guid>
     {
@@ -43,10 +43,10 @@ namespace Ecommerce.Application.Features.Product.Commands
 
             var product = new Ecommerce.Domain.Entities.Product
             {
-                Id = Guid.NewGuid(),
                 Name = request.Name,
                 Price = request.Price,
                 Description = request.Description,
+                Stock = request.Stock,
                 CategoryId = request.CategoryId
             };
 

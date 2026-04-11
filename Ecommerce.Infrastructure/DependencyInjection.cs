@@ -55,6 +55,7 @@ namespace Ecommerce.Infrastructure
             services.AddScoped<ITokenService, JwtTokenService>();
             services.AddScoped<ICurrentUserService, CurrentUserService>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
+            services.AddHttpClient<IZaloPayService, ZaloPayService>();
 
             return services;
         }

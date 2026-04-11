@@ -14,6 +14,8 @@ namespace Ecommerce.Application.Features.Product.Queries
         Guid? CategoryId = null,
         decimal? MinPrice = null,
         decimal? MaxPrice = null,
+        string? SortBy = null,
+        bool IsAscending = false,
         int PageNumber = 1,
         int PageSize = 10
     ) : IRequest<PaginatedList<ProductDto>>;
@@ -43,13 +45,26 @@ namespace Ecommerce.Application.Features.Product.Queries
             if (request.MaxPrice.HasValue)
                 query = query.Where(p => p.Price <= request.MaxPrice);
 
+            if(!string.IsNullOrWhiteSpace(request.Name))
+                query = query.Where(p => p.Name.ToLower().Contains(request.Name.ToLower()));
+
+            query = request.SortBy?.ToLower() switch
+            {
+                "price" => request.IsAscending
+                    ? query.OrderBy(p => p.Price)
+                    : query.OrderByDescending(p => p.Price),
+                "name" => request.IsAscending
+                    ? query.OrderBy(p => p.Name)
+                    : query.OrderByDescending(p => p.Name),
+                _ => query.OrderByDescending(p => p.CreatedAtUtc)
+            };
+
             var totalCount = await query.CountAsync(cancellationToken);
 
             var items = await query
-                .OrderByDescending(p => p.CreatedAtUtc)
                 .Skip((request.PageNumber - 1) * request.PageSize)
                 .Take(request.PageSize)
-                .Select(p => new ProductDto(p.Id, p.Name, p.Price, p.Category.Name))
+                .Select(p => new ProductDto(p.Id, p.Name, p.Price,p.Stock, p.Category.Name))
                 .ToListAsync(cancellationToken);
 
             return new PaginatedList<ProductDto>(items, totalCount, request.PageNumber, request.PageSize);

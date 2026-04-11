@@ -1,28 +1,51 @@
 ﻿using Ecommerce.Application.Interfaces;
+using Ecommerce.Domain.Entities;
 using Ecommerce.Infrastructure.Data;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
-namespace Ecommerce.Infrastructure.Persistence
+namespace Ecommerce.Infrastructure.Persistence;
+
+public class UnitOfWork(
+    ApplicationDbContext context) : IUnitOfWork
 {
-    public class UnitOfWork : IUnitOfWork
+    private readonly ApplicationDbContext _context = context;
+    private IDbContextTransaction? _currentTransaction;
+
+    public DbSet<Order> Orders => _context.Orders;
+    public async Task BeginTransactionAsync(CancellationToken cancellationToken = default)
     {
-        private readonly ApplicationDbContext _context;
+        _currentTransaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+    }
 
-        public UnitOfWork(ApplicationDbContext context)
+    public async Task CommitTransactionAsync(CancellationToken cancellationToken = default)
+    {
+        if (_currentTransaction != null)
         {
-            _context = context;
+            await _currentTransaction.CommitAsync(cancellationToken);
+            await _currentTransaction.DisposeAsync();
+            _currentTransaction = null;
         }
+    }
 
-        public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    public async Task RollbackTransactionAsync(CancellationToken cancellationToken = default)
+    {
+        if (_currentTransaction != null)
         {
-            return await _context.SaveChangesAsync(cancellationToken);
+            await _currentTransaction.RollbackAsync(cancellationToken);
+            await _currentTransaction.DisposeAsync();
+            _currentTransaction = null;
         }
+    }
 
-        public void Dispose()
-        {
-            _context.Dispose();
-        }
+    public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        return await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public void Dispose()
+    {
+        _context.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

@@ -74,7 +74,7 @@ public class JwtTokenService : ITokenService
             HttpOnly = true,
             Secure = true,
             SameSite = SameSiteMode.Strict,
-            Expires = DateTime.UtcNow.AddDays(-1)
+            Expires = DateTimeOffset.UtcNow.AddDays(-1)
         });
     }
 }

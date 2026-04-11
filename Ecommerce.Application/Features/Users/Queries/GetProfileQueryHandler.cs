@@ -30,6 +30,8 @@ namespace Ecommerce.Application.Features.Users.Queries
 
             if (user == null) throw new NotFoundException("User", userId.Value);
 
+            if (string.IsNullOrEmpty(user.RefreshToken)) throw new UnauthorizedException("You have log out.");
+
             return new UserProfileDto
             {
                 Id = user.Id,

@@ -1,5 +1,6 @@
 ﻿using Ecommerce.Application.Interfaces;
 using Ecommerce.Core.Entities;
+using Ecommerce.Domain.Common;
 using Ecommerce.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -24,6 +25,15 @@ namespace Ecommerce.Infrastructure.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+            foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+            {
+                if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType))
+                {
+                    modelBuilder.Entity(entityType.ClrType)
+                        .Property(nameof(BaseEntity.Id))
+                        .ValueGeneratedNever();
+                }
+            }
 
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
         }

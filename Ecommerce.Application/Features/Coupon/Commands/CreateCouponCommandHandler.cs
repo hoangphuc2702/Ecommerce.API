@@ -1,14 +1,15 @@
 ﻿using Ecommerce.Application.Interfaces;
 using Ecommerce.Domain.Exceptions;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using Microsoft.EntityFrameworkCore;
 
 namespace Ecommerce.Application.Features.Coupon.Commands
 {
-    public class CreateCouponCommandHandler
+    public class CreateCouponCommandHandler : IRequestHandler<CreateCouponCommand, Guid>
     {
         private readonly IApplicationDbContext _context;
         private readonly IUnitOfWork _unitOfWork;

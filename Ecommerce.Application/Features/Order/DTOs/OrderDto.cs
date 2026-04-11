@@ -15,4 +15,10 @@ namespace Ecommerce.Application.Features.Order.DTOs
         string PhoneNumber,
         List<OrderItemDto> Items
     );
+
+    public class CheckoutResponse
+    {
+        public Guid OrderId { get; set; }
+        public string PaymentUrl { get; set; } = string.Empty;
+    }
 }

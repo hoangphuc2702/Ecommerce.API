@@ -19,10 +19,11 @@ public static class ProductEndpoints
         group.MapGet("/", async ([AsParameters] GetProductsQuery query, ISender sender) =>
         {
             var products = await sender.Send(query);
-            return Results.Ok(products);
+            var response = Result<PaginatedList<ProductDto>>.SuccessResult(products);
+            return Results.Ok(response);
         })
         .WithName("GetProducts")
-        .Produces<PaginatedList<ProductDto>>(StatusCodes.Status200OK);
+        .Produces<Result<PaginatedList<ProductDto>>>(StatusCodes.Status200OK);
 
         group.MapGet("/{id:guid}", async (Guid id, ISender sender) =>
         {
@@ -39,6 +40,7 @@ public static class ProductEndpoints
                 request.Name,
                 request.Price,
                 request.Description,
+                request.Stock,
                 request.CategoryId);
 
             var result = await sender.Send(command);
@@ -57,14 +59,15 @@ public static class ProductEndpoints
                 request.Name,
                 request.Price,
                 request.Description,
+                request.Stock,
                 request.CategoryId);
 
-            await sender.Send(command);
-            return Results.NoContent();
+            var result = await sender.Send(command);
+            return Results.Ok(result);
         })
         .RequireAuthorization(policy => policy.RequireRole("Admin"))
         .WithName("UpdateProduct")
-        .Produces(StatusCodes.Status204NoContent)
+        .Produces(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status404NotFound);
 

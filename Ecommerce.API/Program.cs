@@ -2,6 +2,7 @@ using Ecommerce.API;
 using Ecommerce.API.Endpoints;
 using Ecommerce.API.Handlers;
 using Ecommerce.Application;
+using Ecommerce.Application.Common.Hubs;
 using Ecommerce.Application.Interfaces;
 using Ecommerce.Infrastructure;
 using Ecommerce.Infrastructure.Data;
@@ -13,11 +14,13 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using System.Text;
 using Serilog;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddSignalR();
+builder.Services.AddDistributedMemoryCache();
 builder.Host.UseSerilog((context, configuration) =>
     configuration.ReadFrom.Configuration(context.Configuration));
 
@@ -25,8 +28,8 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString)
 );
+builder.Services.AddInfrastructureDI(builder.Configuration);
 builder.Services.AddApplicationDI();
-builder.Services.AddInfrastructureDI(builder.Configuration); 
 builder.Services.AddAuthorization();
 //builder.Services.AddControllers(); 
 builder.Services.AddApiDI();
@@ -93,5 +96,6 @@ app.MapCartEndpoints();
 app.MapOrderEndpoints();
 app.MapCouponEndpoints();
 app.MapReviewEndpoints();
+app.MapHub<PaymentHub>("/paymentHub");
 
 app.Run();

@@ -1,5 +1,7 @@
 ﻿using Ecommerce.Application.Features.Order.Commands;
 using Ecommerce.Application.Features.Order.Queries;
+using Ecommerce.Application.Features.ZaloPay.Commands;
+using Ecommerce.Application.Features.ZaloPay.DTOs;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -74,5 +76,18 @@ public static class OrderEndpoints
         .Produces(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status403Forbidden)
         .Produces(StatusCodes.Status404NotFound);
+
+        var publicGroup = app.MapGroup("api/v1/orders")
+                     .WithTags("Orders (Public Webhook)");
+
+        publicGroup.MapPost("/callback/zalopay", async (ZaloPayCallbackRequest request, ISender sender) =>
+        {
+            var command = new UpdateZaloPayCallbackCommand(request.Data, request.Mac);
+            var result = await sender.Send(command);
+
+            return Results.Ok(result);
+        })
+        .AllowAnonymous()
+        .WithName("ZaloPayCallback");
     }
 }

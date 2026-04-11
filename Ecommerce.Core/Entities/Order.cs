@@ -17,12 +17,23 @@ namespace Ecommerce.Domain.Entities
 
         public OrderStatus Status { get; set; } = OrderStatus.Pending;
 
+        public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Pending;
+        public string? ZaloPayTransId { get; set; }
         public string ShippingAddress { get; set; } = string.Empty;
         public string PhoneNumber { get; set; } = string.Empty;
 
         public virtual User User { get; set; } = null!;
 
         public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
+
+        public Order(Guid id) : this()
+        {
+            Id = id;
+        }
+
+        public Order()
+        {
+        }
 
     }
 }

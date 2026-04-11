@@ -1,9 +1,11 @@
-﻿using Ecommerce.Application.Interfaces;
+﻿using Ecommerce.Application.Features.Order.DTOs;
+using Ecommerce.Application.Interfaces;
 using Ecommerce.Domain.Entities;
 using Ecommerce.Domain.Enums;
 using Ecommerce.Domain.Exceptions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -13,26 +15,29 @@ using System.Threading.Tasks;
 
 namespace Ecommerce.Application.Features.Order.Commands
 {
-    public class CheckoutCommandHandler : IRequestHandler<CheckoutCommand, Guid>
+    public class CheckoutCommandHandler : IRequestHandler<CheckoutCommand, CheckoutResponse>
     {
         private readonly IApplicationDbContext _context;
+        private readonly IZaloPayService _zaloPayService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUserService;
         private readonly ILogger<CheckoutCommandHandler> _logger;
 
         public CheckoutCommandHandler(
             IApplicationDbContext context,
+            IZaloPayService zaloPayService,
             IUnitOfWork unitOfWork,
             ICurrentUserService currentUserService,
             ILogger<CheckoutCommandHandler> logger)
         {
             _context = context;
+            _zaloPayService = zaloPayService;
             _unitOfWork = unitOfWork;
             _currentUserService = currentUserService;
             _logger = logger;
         }
 
-        public async Task<Guid> Handle(CheckoutCommand request, CancellationToken cancellationToken)
+        public async Task<CheckoutResponse> Handle(CheckoutCommand request, CancellationToken cancellationToken)
         {
             var userId = _currentUserService.UserId;
             if (!userId.HasValue)
@@ -77,7 +82,6 @@ namespace Ecommerce.Application.Features.Order.Commands
 
                     orderItems.Add(new OrderItem
                     {
-                        Id = Guid.NewGuid(),
                         OrderId = orderId,
                         ProductId = product.Id,
                         Quantity = cartItem.Quantity,
@@ -85,13 +89,11 @@ namespace Ecommerce.Application.Features.Order.Commands
                     });
                 }
 
-                // 3. Tính toán số tiền cuối cùng (Apply Discount)
                 decimal discountAmount = subTotal * discountRate;
                 decimal totalAmount = subTotal - discountAmount;
 
-                var order = new Domain.Entities.Order
+                var order = new Domain.Entities.Order(orderId)
                 {
-                    Id = orderId,
                     UserId = userId.Value,
                     TotalAmount = Math.Round(totalAmount, 0),
                     SubTotal = subTotal, 
@@ -107,23 +109,37 @@ namespace Ecommerce.Application.Features.Order.Commands
 
                 _context.CartItems.RemoveRange(cart.Items);
 
-                await _unitOfWork.SaveChangesAsync(cancellationToken);
+                await _context.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
 
                 _logger.LogInformation("Order {OrderId} placed. SubTotal: {SubTotal}, Discount: {Discount} ({Rate}%), Total: {Total}",
                     orderId, subTotal, discountAmount, discountRate * 100, totalAmount);
 
-                return orderId;
+                var paymentUrl = await _zaloPayService.CreatePaymentUrl(order);
+
+                return new CheckoutResponse
+                {
+                    OrderId = orderId,
+                    PaymentUrl = paymentUrl
+                };
+                
+
             }
             catch (DbUpdateConcurrencyException ex)
             {
-                await transaction.RollbackAsync(cancellationToken);
+                if (transaction.GetDbTransaction().Connection != null)
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                }
                 _logger.LogWarning(ex, "Concurrency conflict for User {UserId}.", userId);
                 throw new BadRequestException("The stock for a product has changed. Please try again.");
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync(cancellationToken);
+                if (transaction.GetDbTransaction().Connection != null)
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                }
                 _logger.LogError(ex, "Checkout failed for User {UserId}.", userId);
                 throw;
             }

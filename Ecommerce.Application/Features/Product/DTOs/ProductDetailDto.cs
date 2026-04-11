@@ -8,9 +8,10 @@ namespace Ecommerce.Application.Features.Product.DTOs
     string Name,
     decimal Price,
     string? Description,
+    int Stock,
     Guid CategoryId,
     string CategoryName,
-        double AverageRating,
+    double AverageRating,
     int TotalReviews
     );
 }

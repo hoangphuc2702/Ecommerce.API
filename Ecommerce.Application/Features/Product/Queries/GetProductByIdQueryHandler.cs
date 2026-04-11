@@ -23,6 +23,7 @@ public class GetProductByIdQueryHandler : IRequestHandler<GetProductByIdQuery, P
                 p.Name,
                 p.Price,
                 p.Description ?? "",
+                p.Stock,
                 p.CategoryId,
                 p.Category.Name,
                 _context.Reviews.Where(r => r.ProductId == p.Id).Any()

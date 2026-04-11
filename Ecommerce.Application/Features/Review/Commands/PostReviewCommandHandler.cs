@@ -38,7 +38,6 @@ namespace Ecommerce.Application.Features.Review.Commands
 
             var review = new Ecommerce.Domain.Entities.Review
             {
-                Id = Guid.NewGuid(),
                 ProductId = request.ProductId,
                 UserId = userId.Value,
                 Rating = request.Rating,

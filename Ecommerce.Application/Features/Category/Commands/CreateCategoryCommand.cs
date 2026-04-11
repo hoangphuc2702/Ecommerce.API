@@ -32,9 +32,9 @@ namespace Ecommerce.Application.Features.Category.Commands
 
             var category = new Ecommerce.Domain.Entities.Category
             {
-                Id = Guid.NewGuid(),
                 Name = request.Name,
-                Description = request.Description
+                Description = request.Description,
+                
             };
 
             _context.Categories.Add(category);

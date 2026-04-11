@@ -13,6 +13,7 @@
   <ItemGroup>
     <Folder Include="Features\Coupon\Queries\" />
     <Folder Include="Features\Users\Commands\" />
+    <Folder Include="Features\ZaloPay\Queries\" />
   </ItemGroup>
 
   <ItemGroup>
