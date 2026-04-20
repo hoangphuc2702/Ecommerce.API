@@ -1,8 +1,11 @@
-﻿using Ecommerce.Application.Features.Coupon.Commands;
+﻿using Ecommerce.Application.Features.Category.DTOs;
+using Ecommerce.Application.Features.Coupon.Commands;
 using Ecommerce.Application.Features.Coupon.DTOs;
+using Ecommerce.Application.Features.Coupon.GetCoupons;
 using Ecommerce.Application.Interfaces;
 using Ecommerce.Infrastructure.Services;
 using MediatR;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Ecommerce.API.Endpoints
 {
@@ -11,6 +14,15 @@ namespace Ecommerce.API.Endpoints
         public static void MapCouponEndpoints(this IEndpointRouteBuilder app)
         {
             var group = app.MapGroup("/api/v1/coupons").WithTags("Coupons");
+
+            group.MapGet("/", async (ISender sender) =>
+            {
+                var categories = await sender.Send(new GetCouponsQuery());
+                return Results.Ok(categories);
+            })
+            .WithName("GetCoupons")
+            .Produces<IEnumerable<CouponDto>>(StatusCodes.Status200OK);
+
             group.MapPost("/", async (CreateCouponRequest request, ISender sender) =>
             {
                 var command = new CreateCouponCommand(

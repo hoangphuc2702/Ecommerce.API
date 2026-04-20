@@ -1,5 +1,4 @@
-﻿using Ecommerce.Application.Features.Auth.Queries;
-using Ecommerce.Application.Interfaces;
+﻿using Ecommerce.Application.Interfaces;
 using Ecommerce.Domain.Exceptions;
 using MediatR;
 using Microsoft.AspNetCore.Http;
@@ -8,7 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Ecommerce.Application.Features.Auth.Commands
+namespace Ecommerce.Application.Features.Auth.RefreshToken
 {
     public record RefreshTokenCommand : IRequest<string>;
 

@@ -12,6 +12,9 @@ namespace Ecommerce.Domain.Entities
         public Guid UserId { get; set; }
         public decimal SubTotal { get; set; }
         public decimal DiscountAmount { get; set; }
+        public decimal PromotionDiscount { get; set; }
+        public decimal CouponDiscount { get; set; }
+        public string AppliedPromotionNotes { get; set; }
         public decimal TotalAmount { get; set; }
         public DateTime OrderDate { get; set; } = DateTime.UtcNow;
 
@@ -20,6 +23,7 @@ namespace Ecommerce.Domain.Entities
         public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Pending;
         public string? ZaloPayTransId { get; set; }
         public string ShippingAddress { get; set; } = string.Empty;
+        public decimal ShippingFee { get; set; }
         public string PhoneNumber { get; set; } = string.Empty;
 
         public virtual User User { get; set; } = null!;

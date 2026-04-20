@@ -1,5 +1,6 @@
 ﻿using Ecommerce.Application.Common.Models;
 using Ecommerce.Application.Features.Product.DTOs;
+using Ecommerce.Application.Features.ProductVariant.DTOs;
 using Ecommerce.Application.Interfaces;
 using Ecommerce.Domain.Exceptions;
 using MediatR;
@@ -35,19 +36,22 @@ public class UpdateProductCommandHandler : IRequestHandler<UpdateProductCommand,
     {
         _logger.LogInformation("Updating product {ProductId} with new data.", request.Id);
 
-        var product = await _context.Products.FindAsync(new object[] { request.Id }, cancellationToken);
+        var product = await _context.Products
+            .Include(p => p.Variants)
+            .Include(p => p.Category)
+            .FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken);
 
         if (product == null)
         {
             _logger.LogWarning("Update failed: Product {ProductId} not found.", request.Id);
-            throw new NotFoundException("Product", request.Id);
+            return Result<ProductDetailDto>.Failure($"Product {request.Id} not found.");
         }
 
         var categoryExists = await _context.Categories.AnyAsync(c => c.Id == request.CategoryId, cancellationToken);
         if (!categoryExists)
         {
             _logger.LogWarning("Update failed: Target Category {CategoryId} does not exist.", request.CategoryId);
-            throw new NotFoundException("Category", request.CategoryId);
+            return Result<ProductDetailDto>.Failure($"Category {request.CategoryId} not found.");
         }
 
         product.Name = request.Name;
@@ -66,6 +70,16 @@ public class UpdateProductCommandHandler : IRequestHandler<UpdateProductCommand,
             ? await reviewsQuery.AverageAsync(r => (double)r.Rating, cancellationToken)
             : 0.0;
 
+        //Map product variants to DTOs
+        var variantDtos = product.Variants.Select(v => new ProductVariantDto(
+            v.Id,
+            v.Sku,
+            v.Color,
+            v.Size,
+            v.Price,
+            v.Stock
+        )).ToList();
+
         var updatedProductDto = new ProductDetailDto(
             product.Id,
             product.Name,
@@ -75,7 +89,8 @@ public class UpdateProductCommandHandler : IRequestHandler<UpdateProductCommand,
             product.CategoryId,
             category?.Name ?? "N/A",
             AverageRating: Math.Round(averageRating, 1),
-            TotalReviews: totalReviews
+            TotalReviews: totalReviews,
+            Variants: variantDtos
         );
 
         _logger.LogInformation("Product {ProductId} updated successfully.", request.Id);

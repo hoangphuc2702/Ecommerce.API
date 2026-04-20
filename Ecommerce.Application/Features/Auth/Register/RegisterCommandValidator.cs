@@ -1,10 +1,9 @@
-﻿using Ecommerce.Application.Features.Auth.Commands;
-using FluentValidation;
+﻿using FluentValidation;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Ecommerce.Application.Features.Auth.Validators
+namespace Ecommerce.Application.Features.Auth.Register
 {
     public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
     {

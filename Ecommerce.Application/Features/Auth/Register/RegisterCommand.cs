@@ -9,7 +9,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Text;
 
-namespace Ecommerce.Application.Features.Auth.Commands
+namespace Ecommerce.Application.Features.Auth.Register
 {
     public record RegisterCommand(string Name, string Email, string Password) : IRequest<Guid>;
 

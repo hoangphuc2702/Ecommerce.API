@@ -44,6 +44,7 @@ namespace Ecommerce.Application.Features.Order.Queries
                 order.Status.ToString(),
                 order.OrderDate,
                 order.ShippingAddress ?? "N/A",
+                order.ShippingFee,
                 order.PhoneNumber ?? "N/A",
                 order.OrderItems.Select(oi => new OrderItemDto(
                     oi.ProductId,

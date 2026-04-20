@@ -1,4 +1,5 @@
 ﻿using Ecommerce.Application.Features.Product.DTOs;
+using Ecommerce.Application.Features.ProductVariant.DTOs;
 using Ecommerce.Application.Interfaces;
 using Ecommerce.Domain.Exceptions;
 using MediatR;
@@ -17,6 +18,7 @@ public class GetProductByIdQueryHandler : IRequestHandler<GetProductByIdQuery, P
         var product = await _context.Products
             .AsNoTracking()
             .Include(p => p.Category)
+            .Include(p => p.Variants)
             .Where(p => p.Id == request.Id)
             .Select(p => new ProductDetailDto(
                 p.Id,
@@ -29,7 +31,10 @@ public class GetProductByIdQueryHandler : IRequestHandler<GetProductByIdQuery, P
                 _context.Reviews.Where(r => r.ProductId == p.Id).Any()
                     ? Math.Round(_context.Reviews.Where(r => r.ProductId == p.Id).Average(r => (double)r.Rating), 1)
                     : 0,
-                _context.Reviews.Count(r => r.ProductId == p.Id)
+                _context.Reviews.Count(r => r.ProductId == p.Id),
+                p.Variants.Select(v => new ProductVariantDto(
+                    v.Id, v.Sku, v.Color, v.Size, v.Price, v.Stock
+                )).ToList()
             ))
             .FirstOrDefaultAsync(cancellationToken);
 

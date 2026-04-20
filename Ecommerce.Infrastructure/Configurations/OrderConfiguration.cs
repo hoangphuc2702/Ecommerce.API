@@ -27,11 +27,21 @@ namespace Ecommerce.Infrastructure.Configurations
                 .HasConversion<string>()
                 .HasMaxLength(20)
                 .IsRequired();
+
             builder.Property(o => o.DiscountAmount)
                 .HasPrecision(18, 2);
 
             builder.Property(o => o.SubTotal)
-                .HasPrecision(18, 2);
+                .HasPrecision(18, 2)
+                .IsRequired();
+
+            builder.Property(o => o.PromotionDiscount)
+                .HasPrecision(18, 2)
+                .HasDefaultValue(0);
+
+            builder.Property(o => o.CouponDiscount)
+                .HasPrecision(18, 2)
+                .HasDefaultValue(0);
 
             builder.Property(o => o.PaymentStatus)
             .HasConversion<string>()
@@ -54,6 +64,10 @@ namespace Ecommerce.Infrastructure.Configurations
             builder.Property(o => o.ShippingAddress)
                 .IsRequired()
                 .HasMaxLength(500);
+
+            builder.Property(o => o.ShippingFee)
+                .HasPrecision(18, 2)
+                .HasDefaultValue(0);
 
             builder.Property(o => o.PhoneNumber)
                 .IsRequired()

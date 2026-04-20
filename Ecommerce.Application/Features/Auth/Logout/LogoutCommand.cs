@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Ecommerce.Application.Features.Auth.Commands
+namespace Ecommerce.Application.Features.Auth.Logout
 {
     public record LogoutCommand : IRequest<string>;
 
