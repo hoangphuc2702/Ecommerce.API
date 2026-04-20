@@ -13,12 +13,14 @@ namespace Ecommerce.Application.Interfaces
         DbSet<User> Users { get; }
         DbSet<Category> Categories { get; }
         DbSet<Product> Products { get; }
+        DbSet<ProductVariant> ProductVariants { get; }
         DbSet<Cart> Carts { get; }
         DbSet<CartItem> CartItems { get; }
         DbSet<Order> Orders { get; }
         DbSet<OrderItem> OrderItems { get; }
         DatabaseFacade Database { get; }
         DbSet<Coupon> Coupons { get; }
+        DbSet<PromotionRule> PromotionRules { get; }
         DbSet<Review> Reviews { get; }
         Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     }

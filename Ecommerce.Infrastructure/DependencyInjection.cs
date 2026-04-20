@@ -1,4 +1,5 @@
 ﻿using Ecommerce.Application.Interfaces;
+using Ecommerce.Domain.Service.Promotion;
 using Ecommerce.Infrastructure.Data;
 using Ecommerce.Infrastructure.Options;
 using Ecommerce.Infrastructure.Persistence;
@@ -55,6 +56,7 @@ namespace Ecommerce.Infrastructure
             services.AddScoped<ITokenService, JwtTokenService>();
             services.AddScoped<ICurrentUserService, CurrentUserService>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
+            services.AddScoped<IPromotionEngine, PromotionEngine>();
             services.AddHttpClient<IZaloPayService, ZaloPayService>();
 
             return services;

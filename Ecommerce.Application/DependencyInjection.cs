@@ -1,5 +1,4 @@
 ﻿using Ecommerce.Application.Common.Behaviors;
-using Ecommerce.Application.Features.Auth.Commands;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;

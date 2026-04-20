@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Ecommerce.Application.Features.ProductVariant.DTOs;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -12,6 +13,7 @@ namespace Ecommerce.Application.Features.Product.DTOs
     Guid CategoryId,
     string CategoryName,
     double AverageRating,
-    int TotalReviews
+    int TotalReviews,
+    List<ProductVariantDto> Variants
     );
 }

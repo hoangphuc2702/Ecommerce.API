@@ -7,7 +7,5 @@ namespace Ecommerce.Domain.Common
     public abstract class BaseEntity
     {
         public Guid Id { get; protected set; } = Guid.NewGuid();
-
-        // public string? CreatedBy { get; set; }
     }
 }

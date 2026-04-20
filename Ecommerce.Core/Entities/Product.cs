@@ -16,5 +16,6 @@ namespace Ecommerce.Domain.Entities
         public bool IsDeleted { get; set; } = false;
 
         public byte[]? Version { get; set; }
+        public virtual ICollection<ProductVariant> Variants { get; set; } = new List<ProductVariant>();
     }
 }

@@ -1,5 +1,8 @@
-﻿using Ecommerce.Application.Features.Auth.Commands;
-using Ecommerce.Application.Features.Auth.Queries;
+﻿using Ecommerce.Application.Common.Models;
+using Ecommerce.Application.Features.Auth.Login;
+using Ecommerce.Application.Features.Auth.Logout;
+using Ecommerce.Application.Features.Auth.RefreshToken;
+using Ecommerce.Application.Features.Auth.Register;
 using Ecommerce.Core.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -25,13 +28,13 @@ namespace Ecommerce.API.Endpoints
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status409Conflict);
 
-            group.MapPost("login", async ([FromBody] LoginQuery query, ISender sender) =>
+            group.MapPost("login", async ([FromBody] LoginCommand command, ISender sender) =>
             {
-                var response = await sender.Send(query);
+                var response = await sender.Send(command);
                 return Results.Ok(response);
             })
             .WithName("LoginUser")
-            .Produces<LoginResponse>(StatusCodes.Status200OK)
+            .Produces<Result<LoginResponse>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized);
 

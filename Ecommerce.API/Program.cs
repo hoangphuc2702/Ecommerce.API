@@ -92,10 +92,13 @@ app.MapAuthEndPoints();
 app.MapUserEndpoints();
 app.MapCategoryEndpoints();
 app.MapProductEndpoints();
+app.MapProductVariantEndpoints();
 app.MapCartEndpoints();
 app.MapOrderEndpoints();
 app.MapCouponEndpoints();
 app.MapReviewEndpoints();
+app.MapPromotionRuleEndpoints();
+
 app.MapHub<PaymentHub>("/paymentHub");
 
 app.Run();

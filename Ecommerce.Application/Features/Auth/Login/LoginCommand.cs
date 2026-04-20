@@ -2,20 +2,21 @@
 using Ecommerce.Core.Entities;
 using Ecommerce.Domain.Exceptions;
 using MediatR;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Ecommerce.Application.Features.Auth.Queries
+namespace Ecommerce.Application.Features.Auth.Login
 {
-    public class LoginQueryHandler : IRequestHandler<LoginQuery, LoginResponse>
+    public record LoginCommand(string Email, string Password) : IRequest<LoginResponse>;
+    public record LoginResponse(Guid UserId, string Name, string Role);
+    public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResponse>
     {
         private readonly IApplicationDbContext _context;
         private readonly IPasswordHasher _passwordHasher;
         private readonly ITokenService _tokenService;
-        public LoginQueryHandler(
+        public LoginCommandHandler(
         IApplicationDbContext context,
         IPasswordHasher passwordHasher,
         ITokenService tokenService)
@@ -24,7 +25,7 @@ namespace Ecommerce.Application.Features.Auth.Queries
             _passwordHasher = passwordHasher;
             _tokenService = tokenService;
         }
-        public async Task<LoginResponse> Handle(LoginQuery request, CancellationToken cancellationToken)
+        public async Task<LoginResponse> Handle(LoginCommand request, CancellationToken cancellationToken)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email, cancellationToken);
             if (user == null || !_passwordHasher.Verify(request.Password, user.PasswordHash))

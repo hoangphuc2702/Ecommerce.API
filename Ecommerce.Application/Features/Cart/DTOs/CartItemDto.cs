@@ -11,6 +11,9 @@ namespace Ecommerce.Application.Features.Cart.DTOs
         public string? ProductImageUrl { get; set; }
         public int Quantity { get; set; }
         public decimal Price { get; set; }
+        public decimal OriginalPrice { get; set; }
+        public decimal DiscountAmount { get; set; }
+        public string? AppliedPromotionName { get; set; }
         public decimal SubTotal => Quantity * Price;
     }
 }

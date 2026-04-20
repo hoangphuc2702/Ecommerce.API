@@ -64,7 +64,7 @@ namespace Ecommerce.Application.Features.Product.Queries
             var items = await query
                 .Skip((request.PageNumber - 1) * request.PageSize)
                 .Take(request.PageSize)
-                .Select(p => new ProductDto(p.Id, p.Name, p.Price,p.Stock, p.Category.Name))
+                .Select(p => new ProductDto(p.Id, p.Name, p.Price, p.Description, p.Stock, p.Category.Name))
                 .ToListAsync(cancellationToken);
 
             return new PaginatedList<ProductDto>(items, totalCount, request.PageNumber, request.PageSize);

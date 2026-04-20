@@ -12,6 +12,7 @@ namespace Ecommerce.Application.Features.Order.DTOs
         string Status,
         DateTime OrderDate,
         string ShippingAddress,
+        decimal ShippingFee,
         string PhoneNumber,
         List<OrderItemDto> Items
     );
