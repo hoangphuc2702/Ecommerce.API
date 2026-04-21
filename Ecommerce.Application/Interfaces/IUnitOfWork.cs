@@ -9,6 +9,8 @@ namespace Ecommerce.Application.Interfaces
     public interface IUnitOfWork : IDisposable
     {
         DbSet<Order> Orders { get; }
+        DbSet<Payment> Payments { get; }
+
 
         Task BeginTransactionAsync(CancellationToken cancellationToken = default);
         Task CommitTransactionAsync(CancellationToken cancellationToken = default);

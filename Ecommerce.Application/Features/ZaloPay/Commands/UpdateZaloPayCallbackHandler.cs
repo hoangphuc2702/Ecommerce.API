@@ -5,18 +5,23 @@ using Ecommerce.Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Configuration; // Bổ sung để lấy Key2
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Ecommerce.Application.Features.ZaloPay.Commands
 {
     public record UpdateZaloPayCallbackCommand(string Data, string Mac) : IRequest<object>;
+
     public class UpdateZaloPayCallbackHandler(
         IUnitOfWork unitOfWork,
-        IZaloPayService zaloPayService,
+        IConfiguration configuration,
         IHubContext<PaymentHub> hubContext,
         IDistributedCache cache,
         ILogger<UpdateZaloPayCallbackHandler> logger) : IRequestHandler<UpdateZaloPayCallbackCommand, object>
@@ -25,7 +30,10 @@ namespace Ecommerce.Application.Features.ZaloPay.Commands
         {
             logger.LogInformation("ZaloPay Webhook received. Data: {Data}", request.Data);
 
-            if (!zaloPayService.ValidateCallback(request.Data, request.Mac))
+            var key2 = configuration["ZaloPay:Key2"];
+            var expectedMac = ComputeHmacSha256(request.Data, key2 ?? "");
+
+            if (!string.Equals(expectedMac, request.Mac, StringComparison.OrdinalIgnoreCase))
             {
                 logger.LogWarning("MAC validation failed! Potential fraud attempt.");
                 return new { return_code = -1, return_message = "Invalid MAC" };
@@ -45,6 +53,7 @@ namespace Ecommerce.Application.Features.ZaloPay.Commands
             try
             {
                 var parts = appTransId.Split('_');
+
                 if (parts.Length < 2 || !Guid.TryParse(parts[1], out var orderId))
                 {
                     logger.LogError("Invalid AppTransId format: {AppTransId}", appTransId);
@@ -66,7 +75,6 @@ namespace Ecommerce.Application.Features.ZaloPay.Commands
                 }
 
                 order.PaymentStatus = PaymentStatus.Paid;
-                order.ZaloPayTransId = dataJson.ZpTransId.ToString();
 
                 await unitOfWork.SaveChangesAsync(cancellationToken);
                 await unitOfWork.CommitTransactionAsync(cancellationToken);
@@ -90,6 +98,16 @@ namespace Ecommerce.Application.Features.ZaloPay.Commands
                 logger.LogError(ex, "Error processing ZaloPay callback for {AppTransId}", appTransId);
                 return new { return_code = 0, return_message = "Internal error" };
             }
+        }
+
+        private string ComputeHmacSha256(string message, string secretKey)
+        {
+            var keyBytes = Encoding.UTF8.GetBytes(secretKey);
+            var messageBytes = Encoding.UTF8.GetBytes(message);
+
+            using var hmac = new HMACSHA256(keyBytes);
+            var hashBytes = hmac.ComputeHash(messageBytes);
+            return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
         }
     }
 }

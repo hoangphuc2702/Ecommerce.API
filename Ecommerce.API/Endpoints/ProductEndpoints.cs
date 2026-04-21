@@ -71,14 +71,18 @@ public static class ProductEndpoints
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status404NotFound);
 
-        group.MapDelete("/{id:guid}", async (Guid id, ISender sender) =>
+        group.MapPatch("/{id:guid}/status", async (Guid id, bool isDeleted, ISender sender) =>
         {
-            await sender.Send(new DeleteProductCommand(id));
-            return Results.NoContent();
+            var command = new UpdateProductStatusCommand(id, isDeleted);
+
+            var result = await sender.Send(command);
+            return Results.Ok(new
+            {
+                Success = true,
+                Id = result
+            });
         })
         .RequireAuthorization(policy => policy.RequireRole("Admin"))
-        .WithName("DeleteProduct")
-        .Produces(StatusCodes.Status204NoContent)
-        .Produces(StatusCodes.Status404NotFound);
+        .WithName("UpdateProductStatus");
     }
 }

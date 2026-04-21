@@ -35,7 +35,10 @@ namespace Ecommerce.Application.Features.Cart.Queries
             if (!userId.HasValue)
             {
                 _logger.LogWarning("Get Cart failed: User identification is missing from the token.");
-                return Result<CartDto>.Failure("User identification is missing. Please log in.");
+                return Result<CartDto>.Failure(new Error(
+                    "User.Unauthorized",
+                    "User identification is missing. Please log in."
+                ));
             }
 
             var cart = await _context.Carts

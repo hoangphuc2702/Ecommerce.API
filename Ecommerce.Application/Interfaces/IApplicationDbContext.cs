@@ -22,6 +22,7 @@ namespace Ecommerce.Application.Interfaces
         DbSet<Coupon> Coupons { get; }
         DbSet<PromotionRule> PromotionRules { get; }
         DbSet<Review> Reviews { get; }
+        DbSet<Payment> Payments { get; }
         Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     }
 }

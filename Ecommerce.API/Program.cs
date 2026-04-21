@@ -73,7 +73,7 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
-
+builder.Services.AddHostedService<PaymentTimeoutWorker>();
 var app = builder.Build();
 
 app.UseExceptionHandler();
@@ -98,6 +98,7 @@ app.MapOrderEndpoints();
 app.MapCouponEndpoints();
 app.MapReviewEndpoints();
 app.MapPromotionRuleEndpoints();
+app.MapPaymentEndpoints();
 
 app.MapHub<PaymentHub>("/paymentHub");
 
