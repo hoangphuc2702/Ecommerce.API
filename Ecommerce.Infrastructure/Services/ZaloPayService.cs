@@ -1,4 +1,5 @@
-﻿using Ecommerce.Application.Features.ZaloPay.DTOs;
+﻿using Ecommerce.Application.Common.Models;
+using Ecommerce.Application.Features.ZaloPay.DTOs;
 using Ecommerce.Application.Interfaces;
 using Ecommerce.Domain.Entities;
 using Ecommerce.Domain.Exceptions;
@@ -14,7 +15,7 @@ using System.Text.Json;
 
 namespace Ecommerce.Infrastructure.Services
 {
-    public class ZaloPayService : IZaloPayService
+    public class ZaloPayService : IPaymentService
     {
         private readonly IConfiguration _config;
         private readonly HttpClient _httpClient;
@@ -29,47 +30,70 @@ namespace Ecommerce.Infrastructure.Services
             _logger = logger;
         }
 
-        public async Task<string> CreatePaymentUrl(Order order)
+        public async Task<Result<string>> CreatePaymentLink(PaymentRequest request)
         {
-            var zaloConfig = _config.GetSection("ZaloPay");
-            var appTransId = $"{DateTime.Now:yyMMdd}_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
+            try
+            {
+                var zaloConfig = _config.GetSection("ZaloPay");
 
-            var items = new[] {new {itemid = order.Id.ToString(), itemname = $"Order #{order.Id}", itemprice = Convert.ToInt64(Math.Round(order.TotalAmount, 0))} };
-            var embedData = "{\"preferred_payment_method\":[]}";
+                var appTransId = $"{DateTime.Now:yyMMdd}_{request.OrderCode}";
 
-            var param = new Dictionary<string, string>
+                var items = request.Items?.Select(x => (object)new {
+                    itemid = x.Name,
+                    itemname = x.Name,
+                    itemprice = Convert.ToInt64(Math.Round(x.Price, 0)),
+                    itemquantity = x.Quantity
+                }).ToList() ?? new List<object>();
+
+                var param = new Dictionary<string, string>
             {
                 { "app_id", zaloConfig["AppId"] ?? "" },
-                { "app_user", "Ecommerce" },
+                { "app_user", request.BuyerName },
                 { "app_time", ZaloPayHelper.GetTimestamp() },
-                { "amount", Convert.ToInt64(Math.Round(order.TotalAmount, 0)).ToString() },
+                { "amount", Convert.ToInt64(Math.Round(request.Amount, 0)).ToString() },
                 { "app_trans_id", appTransId },
                 { "embed_data", "{\"preferred_payment_method\":[]}" },
                 { "item", JsonSerializer.Serialize(items) },
-                { "description", $"Order Payment #{order.Id}" },
+                { "description", request.Description },
                 { "bank_code", "" },
-
-                { "callback_url", "https://vacillant-tristful-sallie.ngrok-free.dev/api/v1/orders/callback/zalopay" }
+                { "callback_url", zaloConfig["CallbackUrl"] ?? "" }
             };
 
-            var data = $"{param["app_id"]}|{param["app_trans_id"]}|{param["app_user"]}|{param["amount"]}|{param["app_time"]}|{param["embed_data"]}|{param["item"]}";
-            param.Add("mac", ZaloPayHelper.ComputeHmacSha256(data, zaloConfig["Key1"] ?? ""));
+                var data = $"{param["app_id"]}|{param["app_trans_id"]}|{param["app_user"]}|{param["amount"]}|{param["app_time"]}|{param["embed_data"]}|{param["item"]}";
+                param.Add("mac", ZaloPayHelper.ComputeHmacSha256(data, zaloConfig["Key1"] ?? ""));
 
-            var content = new FormUrlEncodedContent(param);
-            var response = await _httpClient.PostAsync(zaloConfig["Endpoint"], content);
-            var result = await response.Content.ReadFromJsonAsync<ZaloPayCreateResponse>();
+                var content = new FormUrlEncodedContent(param);
+                var response = await _httpClient.PostAsync(zaloConfig["Endpoint"], content);
+                var result = await response.Content.ReadFromJsonAsync<ZaloPayCreateResponse>();
 
-            if (result?.ReturnCode == 1)
-            {
-                await _cache.SetStringAsync($"order_payment_{appTransId}", "Pending", new DistributedCacheEntryOptions
+                if (result?.ReturnCode == 1)
                 {
-                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15)
-                });
-                return result.OrderUrl;
+                    await _cache.SetStringAsync($"order_payment_{appTransId}", "Pending", new DistributedCacheEntryOptions
+                    {
+                        AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15)
+                    });
+
+                    return Result<string>.SuccessResult(result.OrderUrl, "Create ZaloPay link successfully.");
+                }
+
+                return Result<string>.Failure(new Error("ZaloPay.Error", result?.ReturnMessage ?? "Unknown error"));
             }
-            _logger.LogError("ZaloPay Create Order Failed: {Code} - {Message}. OrderId: {OrderId}",
-                result?.ReturnCode, result?.ReturnMessage, order.Id);
-            throw new BadRequestException($"Unable to create ZaloPay payment: {result?.ReturnMessage}");
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ZaloPay Exception for Order: {OrderCode}", request.OrderCode);
+                return Result<string>.Failure(new Error("ZaloPay.Exception", ex.Message));
+            }
+        }
+
+        public Task<Result<PaymentStatusInfo>> GetPaymentStatus(long orderCode)
+        {
+            return Task.FromResult(Result<PaymentStatusInfo>.Failure(
+                new Error("ZaloPay.NotImplemented", "Not implemented")));
+        }
+
+        public Task<Result<bool>> CancelPaymentLink(long orderCode)
+        {
+            return Task.FromResult(Result<bool>.SuccessResult(true));
         }
 
         public bool ValidateCallback(string data, string mac)

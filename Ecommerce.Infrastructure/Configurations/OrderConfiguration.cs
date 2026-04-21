@@ -49,10 +49,6 @@ namespace Ecommerce.Infrastructure.Configurations
             .IsRequired()
             .HasDefaultValue(Ecommerce.Domain.Enums.PaymentStatus.Pending);
 
-            builder.Property(o => o.ZaloPayTransId)
-            .HasMaxLength(100)
-            .IsRequired(false);
-
             builder.Property(o => o.OrderDate)
                 .IsRequired();
 

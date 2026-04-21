@@ -3,6 +3,7 @@ using Ecommerce.Core.Entities;
 using Ecommerce.Domain.Common;
 using Ecommerce.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using PayOS.Models.V2.PaymentRequests;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -23,6 +24,7 @@ namespace Ecommerce.Infrastructure.Data
         public DbSet<Coupon> Coupons { get; set; }
         public DbSet<PromotionRule> PromotionRules { get; set; }
         public DbSet<Review> Reviews => Set<Review>();
+        public DbSet<Payment> Payments { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
