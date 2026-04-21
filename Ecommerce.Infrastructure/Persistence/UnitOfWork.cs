@@ -13,6 +13,7 @@ public class UnitOfWork(
     private IDbContextTransaction? _currentTransaction;
 
     public DbSet<Order> Orders => _context.Orders;
+    public DbSet<Payment> Payments => _context.Payments;
     public async Task BeginTransactionAsync(CancellationToken cancellationToken = default)
     {
         _currentTransaction = await _context.Database.BeginTransactionAsync(cancellationToken);

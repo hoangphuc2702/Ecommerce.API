@@ -9,9 +9,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using PayOS;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Ecommerce.Infrastructure
 {
@@ -57,7 +59,16 @@ namespace Ecommerce.Infrastructure
             services.AddScoped<ICurrentUserService, CurrentUserService>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IPromotionEngine, PromotionEngine>();
-            services.AddHttpClient<IZaloPayService, ZaloPayService>();
+            //services.AddHttpClient<IPaymentService, ZaloPayService>();
+            services.Configure<Ecommerce.Infrastructure.Services.PayOSOptions>(configuration.GetSection("PayOS"));
+
+            var clientId = configuration["PayOS:ClientId"] ?? throw new Exception("PayOS ClientId is missing in appsettings.json");
+            var apiKey = configuration["PayOS:ApiKey"] ?? throw new Exception("PayOS ApiKey is missing in appsettings.json");
+            var checksumKey = configuration["PayOS:ChecksumKey"] ?? throw new Exception("PayOS ChecksumKey is missing in appsettings.json");
+
+            services.AddSingleton(new PayOSClient(clientId, apiKey, checksumKey));
+
+            services.AddScoped<IPaymentService, PayOSService>();
 
             return services;
         }

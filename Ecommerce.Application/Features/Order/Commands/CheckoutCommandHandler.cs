@@ -1,5 +1,6 @@
-﻿using Ecommerce.Application.Features.Order.DTOs;
-using Ecommerce.Application.Interfaces;
+﻿using Ecommerce.Application.Common.Models;
+using Ecommerce.Application.Features.Order.DTOs;
+using Ecommerce.Application.Interfaces; 
 using Ecommerce.Domain.Entities;
 using Ecommerce.Domain.Enums;
 using Ecommerce.Domain.Exceptions;
@@ -18,20 +19,20 @@ namespace Ecommerce.Application.Features.Order.Commands
     public class CheckoutCommandHandler : IRequestHandler<CheckoutCommand, CheckoutResponse>
     {
         private readonly IApplicationDbContext _context;
-        private readonly IZaloPayService _zaloPayService;
+        private readonly IPaymentService _paymentService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUserService;
         private readonly ILogger<CheckoutCommandHandler> _logger;
 
         public CheckoutCommandHandler(
             IApplicationDbContext context,
-            IZaloPayService zaloPayService,
+            IPaymentService paymentService,
             IUnitOfWork unitOfWork,
             ICurrentUserService currentUserService,
             ILogger<CheckoutCommandHandler> logger)
         {
             _context = context;
-            _zaloPayService = zaloPayService;
+            _paymentService = paymentService;
             _unitOfWork = unitOfWork;
             _currentUserService = currentUserService;
             _logger = logger;
@@ -64,7 +65,9 @@ namespace Ecommerce.Application.Features.Order.Commands
             {
                 var orderId = Guid.NewGuid();
                 decimal subTotal = 0;
+
                 var orderItems = new List<OrderItem>();
+                var paymentItems = new List<PaymentItem>();
 
                 foreach (var cartItem in cart.Items)
                 {
@@ -77,7 +80,6 @@ namespace Ecommerce.Application.Features.Order.Commands
                         throw new BadRequestException($"Insufficient stock for '{product.Name}'. Available: {product.Stock}.");
 
                     product.Stock -= cartItem.Quantity;
-
                     subTotal += cartItem.Quantity * product.Price;
 
                     orderItems.Add(new OrderItem
@@ -87,6 +89,8 @@ namespace Ecommerce.Application.Features.Order.Commands
                         Quantity = cartItem.Quantity,
                         UnitPrice = product.Price
                     });
+
+                    paymentItems.Add(new PaymentItem(product.Name, cartItem.Quantity, product.Price));
                 }
 
                 decimal discountAmount = subTotal * discountRate;
@@ -96,7 +100,7 @@ namespace Ecommerce.Application.Features.Order.Commands
                 {
                     UserId = userId.Value,
                     TotalAmount = Math.Round(totalAmount, 0),
-                    SubTotal = subTotal, 
+                    SubTotal = subTotal,
                     DiscountAmount = discountAmount,
                     OrderDate = DateTime.UtcNow,
                     Status = OrderStatus.Pending,
@@ -106,7 +110,6 @@ namespace Ecommerce.Application.Features.Order.Commands
 
                 await _context.Orders.AddAsync(order, cancellationToken);
                 await _context.OrderItems.AddRangeAsync(orderItems, cancellationToken);
-
                 _context.CartItems.RemoveRange(cart.Items);
 
                 await _context.SaveChangesAsync(cancellationToken);
@@ -115,15 +118,29 @@ namespace Ecommerce.Application.Features.Order.Commands
                 _logger.LogInformation("Order {OrderId} placed. SubTotal: {SubTotal}, Discount: {Discount} ({Rate}%), Total: {Total}",
                     orderId, subTotal, discountAmount, discountRate * 100, totalAmount);
 
-                var paymentUrl = await _zaloPayService.CreatePaymentUrl(order);
+
+                long orderCode = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+                var paymentRequest = new PaymentRequest(
+                    OrderCode: orderCode,
+                    Amount: order.TotalAmount,
+                    Description: $"Thanh toan don #{orderCode}",
+                    BuyerName: user.Name ?? "Customer",
+                    BuyerEmail: user.Email ?? "customer@example.com",
+                    ReturnUrl: "https://your-domain.com/payment-success",
+                    CancelUrl: "https://your-domain.com/payment-cancel",
+                    Items: paymentItems
+                );
+
+                var paymentResult = await _paymentService.CreatePaymentLink(paymentRequest);
+
+                var paymentUrl = paymentResult.IsSuccess ? paymentResult.Data : string.Empty;
 
                 return new CheckoutResponse
                 {
                     OrderId = orderId,
                     PaymentUrl = paymentUrl
                 };
-                
-
             }
             catch (DbUpdateConcurrencyException ex)
             {

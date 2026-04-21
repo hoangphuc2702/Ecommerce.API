@@ -6,12 +6,12 @@ using System.Text;
 
 namespace Ecommerce.Application.Features.Product.Validators
 {
-    public class DeleteProductCommandValidator : AbstractValidator<DeleteProductCommand>
+    public class DeleteProductCommandValidator : AbstractValidator<UpdateProductCommand>
     {
         public DeleteProductCommandValidator()
         {
             RuleFor(x => x.Id)
-                .NotEmpty().WithMessage("Product ID is required for deletion.");
+                .NotEmpty().WithMessage("Product ID is required for updated.");
         }
     }
 }
