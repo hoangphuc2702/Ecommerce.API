@@ -7,7 +7,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Ecommerce.Application.Features.Order.Queries
 {
@@ -15,7 +17,7 @@ namespace Ecommerce.Application.Features.Order.Queries
     {
         private readonly IApplicationDbContext _context;
         private readonly ICurrentUserService _currentUserService;
-        private readonly ILogger<GetOrderHistoryQueryHandler> _logger; 
+        private readonly ILogger<GetOrderHistoryQueryHandler> _logger;
 
         public GetOrderHistoryQueryHandler(
             IApplicationDbContext context,
@@ -40,6 +42,7 @@ namespace Ecommerce.Application.Features.Order.Queries
 
             var orders = await _context.Orders
                 .AsNoTracking()
+                .Include(o => o.Shipment)
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Product)
                 .Where(o => o.UserId == userId)
@@ -53,15 +56,27 @@ namespace Ecommerce.Application.Features.Order.Queries
                 o.TotalAmount,
                 o.Status.ToString(),
                 o.OrderDate,
-                o.ShippingAddress,
+                o.ShippingAddress ?? "N/A",
                 o.ShippingFee,
-                o.PhoneNumber,
+                o.PhoneNumber ?? "N/A",
+
+                o.Shipment != null ? new ShipmentDto(
+                    o.Shipment.TrackingNumber ?? string.Empty,
+                    o.Shipment.PartnerCode ?? "UNKNOWN",
+                    o.Shipment.Fee,
+                    o.Shipment.Status.ToString()
+                ) : null,
+
                 o.OrderItems.Select(oi => new OrderItemDto(
                     oi.ProductId,
-                    oi.Product?.Name ?? "Unknown Product",
+                    oi.Product?.Name ?? string.Empty,
                     oi.Quantity,
                     oi.UnitPrice,
-                    oi.Quantity * oi.UnitPrice
+                    oi.Quantity * oi.UnitPrice,
+                    oi.Product?.Weight ?? 0,
+                    oi.Product?.Length ?? 0,
+                    oi.Product?.Width ?? 0,
+                    oi.Product?.Height ?? 0
                 )).ToList()
             )).ToList();
 

@@ -1,11 +1,8 @@
-﻿using Ecommerce.Application.Features.Category.DTOs;
-using Ecommerce.Application.Features.Coupon.Commands;
+﻿using Ecommerce.Application.Features.Coupon.Commands;
 using Ecommerce.Application.Features.Coupon.DTOs;
 using Ecommerce.Application.Features.Coupon.GetCoupons;
 using Ecommerce.Application.Interfaces;
-using Ecommerce.Infrastructure.Services;
 using MediatR;
-using Microsoft.AspNetCore.Mvc;
 
 namespace Ecommerce.API.Endpoints
 {
@@ -39,9 +36,32 @@ namespace Ecommerce.API.Endpoints
 
                 return Results.Ok(new { Success = true, CouponId = result });
             })
+            .RequireAuthorization(policy => policy.RequireRole("Admin"))
             .WithName("CreateCoupon")
             .Produces(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status400BadRequest);
+
+            group.MapPut("/{id:guid}", async (Guid id, UpdateCouponRequest request, ISender sender) =>
+            {
+                var command = new UpdateCouponCommand(
+                    id,
+                    request.Code,
+                    request.DiscountType,
+                    request.Value,
+                    request.MinOrderValue,
+                    request.StartDate,
+                    request.EndDate,
+                    request.UsageLimit,
+                    request.IsActive);
+
+                var result = await sender.Send(command);
+                return Results.Ok(result);
+            })
+            .RequireAuthorization(policy => policy.RequireRole("Admin"))
+            .WithName("UpdateCoupon")
+            .Produces(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status404NotFound);
 
             group.MapPost("/apply", async (ApplyCouponRequest request, ISender sender, ICurrentUserService currentUserService) =>
             {

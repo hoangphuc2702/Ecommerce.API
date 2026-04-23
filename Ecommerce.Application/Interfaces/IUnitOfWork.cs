@@ -10,7 +10,7 @@ namespace Ecommerce.Application.Interfaces
     {
         DbSet<Order> Orders { get; }
         DbSet<Payment> Payments { get; }
-
+        DbSet<Shipment> Shipments { get; }
 
         Task BeginTransactionAsync(CancellationToken cancellationToken = default);
         Task CommitTransactionAsync(CancellationToken cancellationToken = default);

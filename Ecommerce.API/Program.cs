@@ -99,6 +99,7 @@ app.MapCouponEndpoints();
 app.MapReviewEndpoints();
 app.MapPromotionRuleEndpoints();
 app.MapPaymentEndpoints();
+app.MapShipmentEndpoints();
 
 app.MapHub<PaymentHub>("/paymentHub");
 

@@ -1,8 +1,5 @@
 ﻿using Ecommerce.Application.Features.PayOS.Commands;
 using MediatR;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
 using PayOS.Models.Webhooks;
 
 namespace Ecommerce.API.Endpoints

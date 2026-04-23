@@ -3,7 +3,6 @@ using Ecommerce.Application.Features.Auth.Login;
 using Ecommerce.Application.Features.Auth.Logout;
 using Ecommerce.Application.Features.Auth.RefreshToken;
 using Ecommerce.Application.Features.Auth.Register;
-using Ecommerce.Core.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Ecommerce.Infrastructure.Services
+namespace Ecommerce.Infrastructure.Options
 {
     public class PayOSOptions
     {

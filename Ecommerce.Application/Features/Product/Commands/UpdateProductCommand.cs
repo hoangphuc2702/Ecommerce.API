@@ -7,14 +7,15 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Ecommerce.Application.Features.Product.Commands;
 
-public record UpdateProductRequest(string Name, decimal Price, string? Description, int Stock, Guid CategoryId);
+public record UpdateProductRequest(string Name, decimal Price, string? Description, int Stock, Guid CategoryId, double Weight, double Length, double Width, double Height);
 
-public record UpdateProductCommand(Guid Id, string Name, decimal Price, string? Description, int Stock, Guid CategoryId) : IRequest<Result<ProductDetailDto>>;
+public record UpdateProductCommand(Guid Id, string Name, decimal Price, string? Description, int Stock, Guid CategoryId, double Weight, double Length, double Width, double Height) : IRequest<Result<ProductDetailDto>>;
 
 public class UpdateProductCommandHandler : IRequestHandler<UpdateProductCommand, Result<ProductDetailDto>>
 {
@@ -59,10 +60,14 @@ public class UpdateProductCommandHandler : IRequestHandler<UpdateProductCommand,
         product.Description = request.Description;
         product.Stock = request.Stock;
         product.CategoryId = request.CategoryId;
+        product.Weight = request.Weight;
+        product.Length = request.Length;
+        product.Width = request.Width;
+        product.Height = request.Height;
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        var category = await _context.Categories.FirstOrDefaultAsync(c => c.Id == product.CategoryId, cancellationToken);
 
+        var category = await _context.Categories.FirstOrDefaultAsync(c => c.Id == product.CategoryId, cancellationToken);
         var reviewsQuery = _context.Reviews.Where(r => r.ProductId == product.Id);
 
         var totalReviews = await reviewsQuery.CountAsync(cancellationToken);
@@ -70,7 +75,6 @@ public class UpdateProductCommandHandler : IRequestHandler<UpdateProductCommand,
             ? await reviewsQuery.AverageAsync(r => (double)r.Rating, cancellationToken)
             : 0.0;
 
-        //Map product variants to DTOs
         var variantDtos = product.Variants.Select(v => new ProductVariantDto(
             v.Id,
             v.Sku,
@@ -90,7 +94,11 @@ public class UpdateProductCommandHandler : IRequestHandler<UpdateProductCommand,
             category?.Name ?? "N/A",
             AverageRating: Math.Round(averageRating, 1),
             TotalReviews: totalReviews,
-            Variants: variantDtos
+            Variants: variantDtos,
+            product.Weight,
+            product.Length,
+            product.Width,
+            product.Height
         );
 
         _logger.LogInformation("Product {ProductId} updated successfully.", request.Id);

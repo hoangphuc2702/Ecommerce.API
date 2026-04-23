@@ -6,11 +6,34 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Ecommerce.Application.Features.Product.Commands
 {
-    public record CreateProductRequest(string Name, decimal Price, string? Description, int Stock, Guid CategoryId);
-    public record CreateProductCommand(string Name, decimal Price, string? Description, int Stock, Guid CategoryId) : IRequest<Guid>;
+    public record CreateProductRequest(
+        string Name,
+        decimal Price,
+        string? Description,
+        int Stock,
+        Guid CategoryId,
+        double Weight,
+        double Length,
+        double Width,
+        double Height
+    );
+
+    public record CreateProductCommand(
+        string Name,
+        decimal Price,
+        string? Description,
+        int Stock,
+        Guid CategoryId,
+        double Weight,
+        double Length,
+        double Width,
+        double Height
+    ) : IRequest<Guid>;
 
     public class CreateProductCommandHandler : IRequestHandler<CreateProductCommand, Guid>
     {
@@ -47,7 +70,11 @@ namespace Ecommerce.Application.Features.Product.Commands
                 Price = request.Price,
                 Description = request.Description,
                 Stock = request.Stock,
-                CategoryId = request.CategoryId
+                CategoryId = request.CategoryId,
+                Weight = request.Weight,
+                Length = request.Length,
+                Width = request.Width,
+                Height = request.Height
             };
 
             _context.Products.Add(product);

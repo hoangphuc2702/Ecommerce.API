@@ -4,8 +4,11 @@ using MediatR;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Linq; // Thêm Linq để xài Select
 using Microsoft.EntityFrameworkCore;
 using Ecommerce.Application.Features.Product.DTOs;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Ecommerce.Application.Features.Product.Queries
 {
@@ -33,7 +36,6 @@ namespace Ecommerce.Application.Features.Product.Queries
         {
             var query = _context.Products
                 .AsNoTracking()
-                .Include(p => p.Category)
                 .AsQueryable();
 
             if (request.CategoryId.HasValue)
@@ -45,7 +47,7 @@ namespace Ecommerce.Application.Features.Product.Queries
             if (request.MaxPrice.HasValue)
                 query = query.Where(p => p.Price <= request.MaxPrice);
 
-            if(!string.IsNullOrWhiteSpace(request.Name))
+            if (!string.IsNullOrWhiteSpace(request.Name))
                 query = query.Where(p => p.Name.ToLower().Contains(request.Name.ToLower()));
 
             query = request.SortBy?.ToLower() switch
@@ -64,11 +66,21 @@ namespace Ecommerce.Application.Features.Product.Queries
             var items = await query
                 .Skip((request.PageNumber - 1) * request.PageSize)
                 .Take(request.PageSize)
-                .Select(p => new ProductDto(p.Id, p.Name, p.Price, p.Description, p.Stock, p.Category.Name))
+                .Select(p => new ProductDto(
+                    p.Id,
+                    p.Name,
+                    p.Price,
+                    p.Description ?? string.Empty,
+                    p.Stock,
+                    p.Category.Name,
+                    p.Weight,
+                    p.Length,
+                    p.Width,
+                    p.Height
+                ))
                 .ToListAsync(cancellationToken);
 
             return new PaginatedList<ProductDto>(items, totalCount, request.PageNumber, request.PageSize);
         }
-
     }
 }

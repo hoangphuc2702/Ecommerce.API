@@ -5,8 +5,9 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Ecommerce.Application.Features.Order.Queries
 {
@@ -24,8 +25,10 @@ namespace Ecommerce.Application.Features.Order.Queries
         public async Task<OrderDto> Handle(GetOrderByIdQuery request, CancellationToken cancellationToken)
         {
             _logger.LogInformation("Retrieving order details for OrderId: {OrderId}", request.OrderId);
+
             var order = await _context.Orders
                 .AsNoTracking()
+                .Include(o => o.Shipment)
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Product)
                 .FirstOrDefaultAsync(o => o.Id == request.OrderId, cancellationToken);
@@ -46,12 +49,24 @@ namespace Ecommerce.Application.Features.Order.Queries
                 order.ShippingAddress ?? "N/A",
                 order.ShippingFee,
                 order.PhoneNumber ?? "N/A",
+
+                order.Shipment != null ? new ShipmentDto(
+                    order.Shipment.TrackingNumber ?? string.Empty,
+                    order.Shipment.PartnerCode,
+                    order.Shipment.Fee,
+                    order.Shipment.Status.ToString()
+                ) : null,
+
                 order.OrderItems.Select(oi => new OrderItemDto(
                     oi.ProductId,
                     oi.Product?.Name ?? "Hidden Product",
                     oi.Quantity,
                     oi.UnitPrice,
-                    oi.Quantity * oi.UnitPrice
+                    oi.Quantity * oi.UnitPrice,
+                    oi.Product?.Weight ?? 0,
+                    oi.Product?.Length ?? 0,
+                    oi.Product?.Width ?? 0,
+                    oi.Product?.Height ?? 0
                 )).ToList()
             );
         }

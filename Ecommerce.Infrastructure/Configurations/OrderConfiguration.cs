@@ -44,10 +44,10 @@ namespace Ecommerce.Infrastructure.Configurations
                 .HasDefaultValue(0);
 
             builder.Property(o => o.PaymentStatus)
-            .HasConversion<string>()
-            .HasMaxLength(20)
-            .IsRequired()
-            .HasDefaultValue(Ecommerce.Domain.Enums.PaymentStatus.Pending);
+                .HasConversion<string>()
+                .HasMaxLength(20)
+                .IsRequired()
+                .HasDefaultValue(Ecommerce.Domain.Enums.PaymentStatus.Pending);
 
             builder.Property(o => o.OrderDate)
                 .IsRequired();
@@ -62,12 +62,27 @@ namespace Ecommerce.Infrastructure.Configurations
                 .HasMaxLength(500);
 
             builder.Property(o => o.ShippingFee)
-                .HasPrecision(18, 2)
-                .HasDefaultValue(0);
+                .HasPrecision(18, 2);
 
             builder.Property(o => o.PhoneNumber)
                 .IsRequired()
                 .HasMaxLength(20);
+
+            builder.Property(o => o.PaymentMethod)
+                .IsRequired()
+                .HasMaxLength(50)
+                .HasDefaultValue("COD");
+
+            builder.Property(o => o.Latitude)
+                .IsRequired();
+
+            builder.Property(o => o.Longitude)
+                .IsRequired();
+
+
+            builder.HasOne(o => o.Shipment)
+                .WithOne(s => s.Order)
+                .HasForeignKey<Shipment>(s => s.OrderId);
         }
     }
 }
