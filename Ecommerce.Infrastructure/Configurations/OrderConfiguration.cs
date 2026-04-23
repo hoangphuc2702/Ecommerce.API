@@ -79,6 +79,10 @@ namespace Ecommerce.Infrastructure.Configurations
             builder.Property(o => o.Longitude)
                 .IsRequired();
 
+            builder.Property(o => o.ServiceId)
+                .HasMaxLength(50)
+                .IsRequired(false);
+
 
             builder.HasOne(o => o.Shipment)
                 .WithOne(s => s.Order)

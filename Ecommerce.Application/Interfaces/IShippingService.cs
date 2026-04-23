@@ -9,7 +9,7 @@ namespace Ecommerce.Application.Interfaces
 {
     public interface IShippingService
     {
-        Task<Result<decimal>> GetEstimatedFeeAsync(string destinationAddress, double latitude, double longitude, List<OrderItemDto> items);
+        Task<Result<decimal>> GetEstimatedFeeAsync(string destinationAddress, double latitude, double longitude, List<OrderItemDto> items, string? serviceId = null);
         Task<Result<(string TrackingNumber, decimal Fee)>> CreateShipmentAsync(Order order);
     }
 }

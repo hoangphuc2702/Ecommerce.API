@@ -9,7 +9,6 @@ using System.Text;
 namespace Ecommerce.Application.Features.ProductVariant.Commands
 {
     public record UpdateProductVariantRequest(
-    Guid Id,
     string Sku,
     string Color,
     string Size,

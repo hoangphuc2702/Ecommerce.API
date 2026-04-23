@@ -13,6 +13,6 @@ namespace Ecommerce.Infrastructure.Options
         public string ShopAddress { get; set; } = string.Empty;
         public double WarehouseLat { get; set; }
         public double WarehouseLng { get; set; }
-        public string ServiceId { get; set; } = "SGN-BIKE";
+        public string DefaultServiceId { get; set; } = "SGN-BIKE";
     }
 }

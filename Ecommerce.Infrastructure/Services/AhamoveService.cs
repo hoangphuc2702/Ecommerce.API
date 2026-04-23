@@ -64,8 +64,7 @@ public class AhamoveService : IShippingService
         }
     }
 
-    // --- HÀM TÍNH PHÍ ĐANG CHẠY NGON, KHÔNG ĐỤNG TỚI NỮA ---
-    public async Task<Result<decimal>> GetEstimatedFeeAsync(string destinationAddress, double latitude, double longitude, List<OrderItemDto> items)
+    public async Task<Result<decimal>> GetEstimatedFeeAsync(string destinationAddress, double latitude, double longitude, List<OrderItemDto> items, string? serviceId = null)
     {
         try
         {
@@ -80,9 +79,11 @@ public class AhamoveService : IShippingService
             };
             string pathJson = JsonSerializer.Serialize(pathData);
 
+            var selectedServiceId = serviceId ?? _settings.DefaultServiceId;
+
             var url = $"https://apistg.ahamove.com/v1/order/estimated_fee?" +
                       $"token={Uri.EscapeDataString(tokenResult.Data)}&" +
-                      $"service_id={Uri.EscapeDataString(_settings.ServiceId)}&" +
+                      $"service_id={Uri.EscapeDataString(selectedServiceId)}&" +
                       $"path={Uri.EscapeDataString(pathJson)}&" +
                       $"weight={totalWeight}&" +
                       $"order_time=0&" +
@@ -115,11 +116,10 @@ public class AhamoveService : IShippingService
 
             _logger.LogInformation("Creating Ahamove V3 shipment for Order: {OrderId}", order.Id);
 
-            // TỘI ĐỒ LÀ ĐÂY: KHÔI PHỤC LẠI HEADER BEARER CHO CHUẨN V3!
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenResult.Data);
 
             var packageItems = order.OrderItems.Select(item => new {
-                name = item.Product?.Name ?? "Sản phẩm",
+                name = item.Product?.Name ?? "Product",
                 quantity = item.Quantity,
                 weight = (double)(item.Product?.Weight ?? 0.5)
             }).ToList();
@@ -138,25 +138,25 @@ public class AhamoveService : IShippingService
                     address = order.ShippingAddress,
                     lat = (double)order.Latitude,
                     lng = (double)order.Longitude,
-                    short_name = "Khách",
-                    name = order.CustomerName ?? "Khách hàng",
+                    short_name = "Customer",
+                    name = order.CustomerName ?? "Customer",
                     mobile = order.PhoneNumber,
                     cod = (double)order.TotalAmount
                 }
             };
 
-            // PAYLOAD SẠCH SẼ ĐÚNG CHUẨN V3 (Không nhét Token vào đây nữa)
             var payload = new
             {
-                service_id = _settings.ServiceId ?? "SGN-BIKE",
+                service_id = !string.IsNullOrEmpty(order.ServiceId)
+                             ? order.ServiceId
+                             : _settings.DefaultServiceId,
                 path = path,
                 items = packageItems,
                 order_time = 0,
                 payment_method = "BALANCE",
-                remarks = $"Đơn hàng #{order.Id.ToString()[..8]}"
+                remarks = $"Order #{order.Id.ToString()[..8]}"
             };
 
-            // Gọi đúng endpoint V3 (Sẽ tự động lấy BaseUrl từ DI)
             var response = await _httpClient.PostAsJsonAsync("v3/orders", payload);
 
             if (!response.IsSuccessStatusCode)
