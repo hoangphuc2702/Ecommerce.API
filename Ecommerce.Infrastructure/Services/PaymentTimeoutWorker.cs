@@ -27,9 +27,11 @@ namespace Ecommerce.Infrastructure.Services
                     {
                         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
-                        var timeoutTime = DateTime.UtcNow.AddMinutes(-3);
+                        var timeoutTime = DateTime.UtcNow.AddMinutes(-10);
 
                         var expiredOrders = await unitOfWork.Orders
+                            .Include(o => o.OrderItems)
+                                .ThenInclude(oi => oi.Product) 
                             .Where(o => o.PaymentStatus == PaymentStatus.Pending
                                      && o.OrderDate <= timeoutTime)
                             .ToListAsync(stoppingToken);
@@ -38,10 +40,18 @@ namespace Ecommerce.Infrastructure.Services
                         {
                             foreach (var order in expiredOrders)
                             {
-                                logger.LogInformation("Phiên thanh toán cho Đơn hàng {OrderId} đã hết hạn.", order.Id);
+                                logger.LogInformation("Cancel order {OrderId} and return it to inventory due to payment being overdue by 10 minutes", order.Id);
 
                                 order.PaymentStatus = PaymentStatus.Failed;
+                                order.Status = OrderStatus.Cancelled; 
 
+                                foreach (var item in order.OrderItems)
+                                {
+                                    if (item.Product != null)
+                                    {
+                                        item.Product.Stock += item.Quantity;
+                                    }
+                                }
 
                                 var transaction = await unitOfWork.Payments
                                     .FirstOrDefaultAsync(t => t.OrderId == order.Id, stoppingToken);
@@ -50,9 +60,9 @@ namespace Ecommerce.Infrastructure.Services
                                 {
                                     transaction.Status = PaymentStatus.Failed;
                                 }
-
-                                await unitOfWork.SaveChangesAsync(stoppingToken);
                             }
+
+                            await unitOfWork.SaveChangesAsync(stoppingToken);
                         }
                     }
                 }

@@ -17,9 +17,11 @@ public static class OrderEndpoints
         userGroup.MapPost("/checkout", async (CheckoutRequest request, ISender sender) =>
         {
             var command = new CheckoutCommand(
+                request.CustomerName,
                 request.ShippingAddress,
                 request.PhoneNumber,
                 request.PaymentMethod,
+                request.ServiceId,
                 request.Latitude,
                 request.Longitude
             );
@@ -71,32 +73,32 @@ public static class OrderEndpoints
         .Produces(StatusCodes.Status404NotFound);
 
 
-        var adminGroup = app.MapGroup("api/v1/admin/orders")
-                            .WithTags("Orders (Admin)");
+        //var adminGroup = app.MapGroup("api/v1/admin/orders")
+        //                    .WithTags("Orders (Admin)");
 
-        adminGroup.MapPut("/{id:guid}/status", async (Guid id, UpdateOrderStatusRequest request, ISender sender) =>
-        {
-            var command = new UpdateOrderStatusCommand(id, request.NewStatus, request.Note);
-            await sender.Send(command);
-            return Results.Ok(new { Success = true, Message = "Order status updated successfully." });
-        })
-        .RequireAuthorization(policy => policy.RequireRole("Admin"))
-        .WithName("UpdateOrderStatus")
-        .Produces(StatusCodes.Status200OK)
-        .Produces(StatusCodes.Status403Forbidden)
-        .Produces(StatusCodes.Status404NotFound);
+        //adminGroup.MapPut("/{id:guid}/status", async (Guid id, UpdateOrderStatusRequest request, ISender sender) =>
+        //{
+        //    var command = new UpdateOrderStatusCommand(id, request.NewStatus, request.Note);
+        //    await sender.Send(command);
+        //    return Results.Ok(new { Success = true, Message = "Order status updated successfully." });
+        //})
+        //.RequireAuthorization(policy => policy.RequireRole("Admin"))
+        //.WithName("UpdateOrderStatus")
+        //.Produces(StatusCodes.Status200OK)
+        //.Produces(StatusCodes.Status403Forbidden)
+        //.Produces(StatusCodes.Status404NotFound);
 
-        var publicGroup = app.MapGroup("api/v1/orders")
-                     .WithTags("Orders (Public Webhook)");
+        //var publicGroup = app.MapGroup("api/v1/orders")
+        //             .WithTags("Orders (Public Webhook)");
 
-        publicGroup.MapPost("/callback/zalopay", async (ZaloPayCallbackRequest request, ISender sender) =>
-        {
-            var command = new UpdateZaloPayCallbackCommand(request.Data, request.Mac);
-            var result = await sender.Send(command);
+        //publicGroup.MapPost("/callback/zalopay", async (ZaloPayCallbackRequest request, ISender sender) =>
+        //{
+        //    var command = new UpdateZaloPayCallbackCommand(request.Data, request.Mac);
+        //    var result = await sender.Send(command);
 
-            return Results.Ok(result);
-        })
-        .AllowAnonymous()
-        .WithName("ZaloPayCallback");
+        //    return Results.Ok(result);
+        //})
+        //.AllowAnonymous()
+        //.WithName("ZaloPayCallback");
     }
 }

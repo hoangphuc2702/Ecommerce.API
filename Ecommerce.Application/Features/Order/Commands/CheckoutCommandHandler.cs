@@ -162,19 +162,43 @@ namespace Ecommerce.Application.Features.Order.Commands
                 decimal rankDiscountAmount = subtotalAfterCoupon * discountRate;
 
                 decimal totalDiscountAmount = promoDiscount + couponDiscount + rankDiscountAmount;
-                decimal totalAmount = subTotal - totalDiscountAmount;
+                var orderItemsForFee = cart.Items.Select(i => new OrderItemDto(
+                    i.ProductId,
+                    i.Product?.Name ?? "Product",
+                    i.Quantity,
+                    i.Product?.Price ?? 0,
+                    (i.Product?.Price ?? 0) * i.Quantity,
+                    (double)(i.Product?.Weight ?? 0.5),
+                    (double)(i.Product?.Length ?? 10),
+                    (double)(i.Product?.Width ?? 10),
+                    (double)(i.Product?.Height ?? 10)
+                )).ToList();
+
+                var feeResult = await _shippingService.GetEstimatedFeeAsync(
+                    request.ShippingAddress,
+                    request.Latitude,
+                    request.Longitude,
+                    orderItemsForFee,
+                    request.ServiceId);
+
+                decimal shippingFee = feeResult.IsSuccess ? feeResult.Data : 0;
+
+                decimal totalAmount = (subTotal - totalDiscountAmount) + shippingFee;
 
                 var order = new Domain.Entities.Order(orderId)
                 {
                     UserId = userId.Value,
-                    TotalAmount = Math.Round(totalAmount, 0),
                     SubTotal = subTotal,
+                    ShippingFee = shippingFee,
                     DiscountAmount = totalDiscountAmount,
+                    TotalAmount = Math.Round(totalAmount, 0),
                     OrderDate = DateTime.UtcNow,
                     Status = OrderStatus.Pending,
                     ShippingAddress = request.ShippingAddress,
                     PhoneNumber = request.PhoneNumber,
                     PaymentMethod = request.PaymentMethod,
+                    CustomerName = request.CustomerName,
+                    ServiceId = request.ServiceId,
                     Latitude = request.Latitude,
                     Longitude = request.Longitude,
                     OrderItems = orderItems
@@ -210,6 +234,7 @@ namespace Ecommerce.Application.Features.Order.Commands
                             Status = ShipmentStatus.Idle,
                         };
                         order.ShippingFee = shipResult.Data.Fee;
+                        order.TotalAmount = (order.SubTotal - order.DiscountAmount) + order.ShippingFee;
                         _context.Orders.Update(order);
 
                         await _context.Shipments.AddAsync(newShipment, cancellationToken);

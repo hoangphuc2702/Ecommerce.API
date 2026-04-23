@@ -13,7 +13,8 @@ namespace Ecommerce.Application.Features.Shipping.Queries
         string DestinationAddress,
         string? CouponCode,
         double Latitude,
-        double Longitude
+        double Longitude,
+        string? ServiceId
     ) : IRequest<ShippingFeePreviewResponse>;
 
     public class ShippingFeePreviewResponse
@@ -132,7 +133,7 @@ namespace Ecommerce.Application.Features.Shipping.Queries
                 }
             }
 
-            var shippingResult = await _shippingService.GetEstimatedFeeAsync(request.DestinationAddress, request.Latitude, request.Longitude, response.Items);
+            var shippingResult = await _shippingService.GetEstimatedFeeAsync(request.DestinationAddress, request.Latitude, request.Longitude, response.Items, request.ServiceId);
             response.ShippingFee = shippingResult.IsSuccess ? shippingResult.Data : 0;
 
             response.TotalAmount = subtotalAfterPromo - response.CouponDiscount + response.ShippingFee;

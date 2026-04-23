@@ -28,6 +28,7 @@ namespace Ecommerce.Domain.Entities
         public string PaymentMethod { get; set; } = string.Empty;
         public double Latitude { get; set; }
         public double Longitude { get; set; }
+        public string ServiceId { get; set; } = string.Empty;
         public virtual Shipment? Shipment { get; set; }
 
         public virtual User User { get; set; } = null!;

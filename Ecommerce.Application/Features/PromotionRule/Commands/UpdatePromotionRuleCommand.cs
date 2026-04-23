@@ -9,7 +9,7 @@ using System.Text;
 
 namespace Ecommerce.Application.Features.PromotionRule.Commands
 {
-    public record UpdatePromotionRuleRequest(Guid Id,
+    public record UpdatePromotionRuleRequest(
     string Name,
     string Type,
     int Priority,
