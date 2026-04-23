@@ -1,9 +1,11 @@
 ﻿using Ecommerce.Application.Common.Models;
 using Ecommerce.Application.Features.Order.DTOs;
-using Ecommerce.Application.Interfaces; 
+using Ecommerce.Application.Features.PayOS.Commands;
+using Ecommerce.Application.Interfaces;
 using Ecommerce.Domain.Entities;
 using Ecommerce.Domain.Enums;
 using Ecommerce.Domain.Exceptions;
+using Ecommerce.Domain.Service.Promotion;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -19,23 +21,29 @@ namespace Ecommerce.Application.Features.Order.Commands
     public class CheckoutCommandHandler : IRequestHandler<CheckoutCommand, CheckoutResponse>
     {
         private readonly IApplicationDbContext _context;
-        private readonly IPaymentService _paymentService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUserService;
         private readonly ILogger<CheckoutCommandHandler> _logger;
+        private readonly IShippingService _shippingService;
+        private readonly IMediator _mediator;
+        private readonly IPromotionEngine _promotionEngine;
 
         public CheckoutCommandHandler(
             IApplicationDbContext context,
-            IPaymentService paymentService,
             IUnitOfWork unitOfWork,
             ICurrentUserService currentUserService,
-            ILogger<CheckoutCommandHandler> logger)
+            ILogger<CheckoutCommandHandler> logger,
+            IShippingService shippingService,
+            IMediator mediator,
+            IPromotionEngine promotionEngine)
         {
             _context = context;
-            _paymentService = paymentService;
             _unitOfWork = unitOfWork;
             _currentUserService = currentUserService;
             _logger = logger;
+            _shippingService = shippingService;
+            _mediator = mediator;
+            _promotionEngine = promotionEngine;
         }
 
         public async Task<CheckoutResponse> Handle(CheckoutCommand request, CancellationToken cancellationToken)
@@ -67,7 +75,6 @@ namespace Ecommerce.Application.Features.Order.Commands
                 decimal subTotal = 0;
 
                 var orderItems = new List<OrderItem>();
-                var paymentItems = new List<PaymentItem>();
 
                 foreach (var cartItem in cart.Items)
                 {
@@ -87,77 +94,169 @@ namespace Ecommerce.Application.Features.Order.Commands
                         OrderId = orderId,
                         ProductId = product.Id,
                         Quantity = cartItem.Quantity,
-                        UnitPrice = product.Price
+                        UnitPrice = product.Price,
+                        Product = product
                     });
-
-                    paymentItems.Add(new PaymentItem(product.Name, cartItem.Quantity, product.Price));
                 }
 
-                decimal discountAmount = subTotal * discountRate;
-                decimal totalAmount = subTotal - discountAmount;
+                //promotion
+                var now = DateTime.UtcNow;
+                var allActivePromotions = await _context.PromotionRules
+                    .Where(r => r.IsActive && r.StartDate <= now && r.EndDate >= now)
+                    .ToListAsync(cancellationToken);
+
+                var promoEvaluation = _promotionEngine.Evaluate(cart.Items, allActivePromotions);
+                decimal promoDiscount = promoEvaluation.TotalPromotionDiscount;
+                decimal subtotalAfterPromo = subTotal - promoDiscount;
+
+                foreach (var gift in promoEvaluation.Gifts)
+                {
+                    var giftProduct = await _context.Products.FindAsync(new object[] { gift.ProductId }, cancellationToken);
+                    if (giftProduct != null && !giftProduct.IsDeleted)
+                    {
+                        if (giftProduct.Stock >= gift.Quantity)
+                        {
+                            giftProduct.Stock -= gift.Quantity;
+                            orderItems.Add(new OrderItem
+                            {
+                                OrderId = orderId,
+                                ProductId = gift.ProductId,
+                                Quantity = gift.Quantity,
+                                UnitPrice = 0,
+                                Product = giftProduct
+                            });
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Not enough stock for gift product {GiftName}", giftProduct.Name);
+                        }
+                    }
+                }
+
+                //Coupon
+                decimal couponDiscount = 0;
+                if (!string.IsNullOrEmpty(cart.AppliedCouponCode))
+                {
+                    var coupon = await _context.Coupons
+                        .FirstOrDefaultAsync(c => c.Code.ToLower() == cart.AppliedCouponCode.ToLower(), cancellationToken);
+
+                    if (coupon != null && coupon.CanBeUsed() && subtotalAfterPromo >= coupon.MinOrderValue)
+                    {
+                        if (coupon.DiscountType == DiscountType.Percentage)
+                        {
+                            couponDiscount = subtotalAfterPromo * (coupon.Value / 100);
+                            if (coupon.MaxDiscountAmount.HasValue && couponDiscount > coupon.MaxDiscountAmount.Value)
+                                couponDiscount = coupon.MaxDiscountAmount.Value;
+                        }
+                        else
+                        {
+                            couponDiscount = coupon.Value;
+                        }
+
+                        if (couponDiscount > subtotalAfterPromo)
+                            couponDiscount = subtotalAfterPromo;
+                    }
+                }
+
+                decimal subtotalAfterCoupon = subtotalAfterPromo - couponDiscount;
+                decimal rankDiscountAmount = subtotalAfterCoupon * discountRate;
+
+                decimal totalDiscountAmount = promoDiscount + couponDiscount + rankDiscountAmount;
+                decimal totalAmount = subTotal - totalDiscountAmount;
 
                 var order = new Domain.Entities.Order(orderId)
                 {
                     UserId = userId.Value,
                     TotalAmount = Math.Round(totalAmount, 0),
                     SubTotal = subTotal,
-                    DiscountAmount = discountAmount,
+                    DiscountAmount = totalDiscountAmount,
                     OrderDate = DateTime.UtcNow,
                     Status = OrderStatus.Pending,
                     ShippingAddress = request.ShippingAddress,
-                    PhoneNumber = request.PhoneNumber
+                    PhoneNumber = request.PhoneNumber,
+                    PaymentMethod = request.PaymentMethod,
+                    Latitude = request.Latitude,
+                    Longitude = request.Longitude,
+                    OrderItems = orderItems
                 };
 
                 await _context.Orders.AddAsync(order, cancellationToken);
                 await _context.OrderItems.AddRangeAsync(orderItems, cancellationToken);
                 _context.CartItems.RemoveRange(cart.Items);
+                cart.AppliedCouponCode = null;
 
                 await _context.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
 
-                _logger.LogInformation("Order {OrderId} placed. SubTotal: {SubTotal}, Discount: {Discount} ({Rate}%), Total: {Total}",
-                    orderId, subTotal, discountAmount, discountRate * 100, totalAmount);
+                _logger.LogInformation("Order {OrderId} placed and committed to DB. SubTotal: {SubTotal}, Total: {Total}",
+                    orderId, subTotal, totalAmount);
 
-
-                long orderCode = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-
-                var paymentRequest = new PaymentRequest(
-                    OrderCode: orderCode,
-                    Amount: order.TotalAmount,
-                    Description: $"Thanh toan don #{orderCode}",
-                    BuyerName: user.Name ?? "Customer",
-                    BuyerEmail: user.Email ?? "customer@example.com",
-                    ReturnUrl: "https://your-domain.com/payment-success",
-                    CancelUrl: "https://your-domain.com/payment-cancel",
-                    Items: paymentItems
-                );
-
-                var paymentResult = await _paymentService.CreatePaymentLink(paymentRequest);
-
-                var paymentUrl = paymentResult.IsSuccess ? paymentResult.Data : string.Empty;
-
-                return new CheckoutResponse
+                if (!string.IsNullOrEmpty(request.PaymentMethod) && request.PaymentMethod.Equals("COD", StringComparison.OrdinalIgnoreCase))
                 {
-                    OrderId = orderId,
-                    PaymentUrl = paymentUrl
-                };
+                    _logger.LogInformation("Processing COD order. Initiating Ahamove shipment creation for OrderId: {OrderId}", orderId);
+
+                    var shipResult = await _shippingService.CreateShipmentAsync(order);
+
+                    if (shipResult.IsSuccess)
+                    {
+                        var newShipment = new Shipment
+                        {
+                            OrderId = order.Id,
+                            TrackingNumber = shipResult.Data.TrackingNumber,
+                            PartnerCode = "AHAMOVE",
+                            ServiceId = "SGN-BIKE",
+                            Fee = shipResult.Data.Fee,
+                            CodAmount = order.TotalAmount,
+                            Status = ShipmentStatus.Idle,
+                        };
+                        order.ShippingFee = shipResult.Data.Fee;
+                        _context.Orders.Update(order);
+
+                        await _context.Shipments.AddAsync(newShipment, cancellationToken);
+                        await _context.SaveChangesAsync(cancellationToken);
+
+                        _logger.LogInformation("Ahamove shipment created successfully for COD order. Tracking: {TrackingNumber}", newShipment.TrackingNumber);
+                    }
+                    else
+                    {
+                        _logger.LogError("Failed to create Ahamove shipment for COD Order {OrderId}: {Message}", orderId, shipResult.Message);
+                    }
+
+                    return new CheckoutResponse
+                    {
+                        OrderId = orderId,
+                        PaymentUrl = string.Empty
+                    };
+                }
+                else
+                {
+                    _logger.LogInformation("Processing Online Payment. Generating PayOS link for OrderId: {OrderId}", orderId);
+
+                    var paymentUrl = await _mediator.Send(new CreatePayOSLinkCommand(orderId), cancellationToken);
+
+                    return new CheckoutResponse
+                    {
+                        OrderId = orderId,
+                        PaymentUrl = paymentUrl
+                    };
+                }
             }
             catch (DbUpdateConcurrencyException ex)
             {
-                if (transaction.GetDbTransaction().Connection != null)
+                if (transaction.GetDbTransaction()?.Connection != null)
                 {
                     await transaction.RollbackAsync(cancellationToken);
                 }
-                _logger.LogWarning(ex, "Concurrency conflict for User {UserId}.", userId);
+                _logger.LogWarning(ex, "Concurrency conflict detected for User {UserId}.", userId);
                 throw new BadRequestException("The stock for a product has changed. Please try again.");
             }
             catch (Exception ex)
             {
-                if (transaction.GetDbTransaction().Connection != null)
+                if (transaction.GetDbTransaction()?.Connection != null)
                 {
                     await transaction.RollbackAsync(cancellationToken);
                 }
-                _logger.LogError(ex, "Checkout failed for User {UserId}.", userId);
+                _logger.LogError(ex, "Checkout process failed for User {UserId}.", userId);
                 throw;
             }
         }

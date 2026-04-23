@@ -4,6 +4,24 @@ using System.Text;
 
 namespace Ecommerce.Application.Features.Order.DTOs
 {
+    public record ShipmentDto(
+        string TrackingNumber,
+        string PartnerCode,
+        decimal Fee,
+        string Status
+    );
+
+    public record OrderItemDto(
+        Guid ProductId,
+        string ProductName,
+        int Quantity,
+        decimal UnitPrice,
+        decimal SubTotal,
+        double Weight,
+        double Length,
+        double Width,
+        double Height
+    );
     public record OrderDto(
         Guid Id,
         decimal SubTotal,
@@ -14,6 +32,7 @@ namespace Ecommerce.Application.Features.Order.DTOs
         string ShippingAddress,
         decimal ShippingFee,
         string PhoneNumber,
+        ShipmentDto? Shipment,
         List<OrderItemDto> Items
     );
 

@@ -1,11 +1,8 @@
 ﻿using Ecommerce.Application.Features.Cart.Commands;
 using Ecommerce.Application.Features.Cart.DTOs;
 using Ecommerce.Application.Features.Cart.Queries;
-using Ecommerce.Core.Entities;
+using Ecommerce.Application.Features.Shipping.Queries;
 using MediatR;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
 
 namespace Ecommerce.API.Endpoints;
 
@@ -70,5 +67,17 @@ public static class CartEndpoints
         .Produces(StatusCodes.Status204NoContent)
         .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status404NotFound);
+
+        group.MapPost("/preview", async (GetShippingFeeQuery query, ISender sender) =>
+        {
+            var result = await sender.Send(query);
+
+            return Results.Ok(result);
+        })
+        .RequireAuthorization()
+        .WithName("GetCartPreview")
+        .Produces<ShippingFeePreviewResponse>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized);
     }
 }

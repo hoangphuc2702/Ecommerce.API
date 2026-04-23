@@ -1,7 +1,4 @@
 ﻿using Ecommerce.Application.Common.Models;
-using Ecommerce.Application.Features.Product.Commands;
-using Ecommerce.Application.Features.Product.DTOs;
-using Ecommerce.Application.Features.Product.Queries;
 using Ecommerce.Application.Features.PromotionRule.Commands;
 using Ecommerce.Application.Features.PromotionRule.DTOs;
 using Ecommerce.Application.Features.PromotionRule.Queries;

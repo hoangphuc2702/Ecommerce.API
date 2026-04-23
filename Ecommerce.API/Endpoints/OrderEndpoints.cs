@@ -4,10 +4,6 @@ using Ecommerce.Application.Features.PayOS.Commands;
 using Ecommerce.Application.Features.ZaloPay.Commands;
 using Ecommerce.Application.Features.ZaloPay.DTOs;
 using MediatR;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
-using PayOS.Models.Webhooks;
 
 namespace Ecommerce.API.Endpoints;
 
@@ -20,9 +16,20 @@ public static class OrderEndpoints
 
         userGroup.MapPost("/checkout", async (CheckoutRequest request, ISender sender) =>
         {
-            var command = new CheckoutCommand(request.ShippingAddress, request.PhoneNumber);
-            var orderId = await sender.Send(command);
-            return Results.Ok(new { Success = true, OrderId = orderId });
+            var command = new CheckoutCommand(
+                request.ShippingAddress,
+                request.PhoneNumber,
+                request.PaymentMethod,
+                request.Latitude,
+                request.Longitude
+            );
+            var result = await sender.Send(command);
+            return Results.Ok(new
+            {
+                Success = true,
+                OrderId = result.OrderId,
+                PaymentUrl = result.PaymentUrl
+            });
         })
         .RequireAuthorization()
         .WithName("Checkout")

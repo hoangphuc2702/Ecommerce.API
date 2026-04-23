@@ -4,6 +4,10 @@ using Ecommerce.Application.Interfaces;
 using Ecommerce.Domain.Exceptions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Ecommerce.Application.Features.Product.Queries;
 
@@ -17,8 +21,6 @@ public class GetProductByIdQueryHandler : IRequestHandler<GetProductByIdQuery, P
     {
         var product = await _context.Products
             .AsNoTracking()
-            .Include(p => p.Category)
-            .Include(p => p.Variants)
             .Where(p => p.Id == request.Id)
             .Select(p => new ProductDetailDto(
                 p.Id,
@@ -34,7 +36,12 @@ public class GetProductByIdQueryHandler : IRequestHandler<GetProductByIdQuery, P
                 _context.Reviews.Count(r => r.ProductId == p.Id),
                 p.Variants.Select(v => new ProductVariantDto(
                     v.Id, v.Sku, v.Color, v.Size, v.Price, v.Stock
-                )).ToList()
+                )).ToList(),
+
+                p.Weight,
+                p.Length,
+                p.Width,
+                p.Height
             ))
             .FirstOrDefaultAsync(cancellationToken);
 

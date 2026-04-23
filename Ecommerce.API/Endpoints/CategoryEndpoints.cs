@@ -3,9 +3,6 @@ using Ecommerce.Application.Features.Category.Commands;
 using Ecommerce.Application.Features.Category.DTOs;
 using Ecommerce.Application.Features.Category.Queries;
 using MediatR;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
 
 namespace Ecommerce.API.Endpoints;
 

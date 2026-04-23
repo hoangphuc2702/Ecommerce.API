@@ -14,6 +14,9 @@ public class UnitOfWork(
 
     public DbSet<Order> Orders => _context.Orders;
     public DbSet<Payment> Payments => _context.Payments;
+    public DbSet<Shipment> Shipments => _context.Shipments;
+
+
     public async Task BeginTransactionAsync(CancellationToken cancellationToken = default)
     {
         _currentTransaction = await _context.Database.BeginTransactionAsync(cancellationToken);

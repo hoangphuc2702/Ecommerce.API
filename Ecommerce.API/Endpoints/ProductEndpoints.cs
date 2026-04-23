@@ -3,9 +3,6 @@ using Ecommerce.Application.Features.Product.Commands;
 using Ecommerce.Application.Features.Product.DTOs;
 using Ecommerce.Application.Features.Product.Queries;
 using MediatR;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
 
 namespace Ecommerce.API.Endpoints;
 
@@ -41,8 +38,12 @@ public static class ProductEndpoints
                 request.Price,
                 request.Description,
                 request.Stock,
-                request.CategoryId);
-
+                request.CategoryId,
+                request.Weight,
+                request.Length,
+                request.Width,
+                request.Height);
+            
             var result = await sender.Send(command);
             return Results.Ok(new { Success = true, Id = result });
         })
@@ -60,7 +61,11 @@ public static class ProductEndpoints
                 request.Price,
                 request.Description,
                 request.Stock,
-                request.CategoryId);
+                request.CategoryId,
+                request.Weight,
+                request.Length,
+                request.Width,
+                request.Height);
 
             var result = await sender.Send(command);
             return Results.Ok(result);

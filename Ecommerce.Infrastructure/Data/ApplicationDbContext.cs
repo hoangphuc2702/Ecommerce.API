@@ -26,6 +26,9 @@ namespace Ecommerce.Infrastructure.Data
         public DbSet<Review> Reviews => Set<Review>();
         public DbSet<Payment> Payments { get; set; }
 
+        public DbSet<Shipment> Shipments { get; set; }
+
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

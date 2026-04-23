@@ -14,6 +14,10 @@ namespace Ecommerce.Domain.Entities
         public Guid CategoryId { get; set; }
         public Category Category { get; set; } = null!;
         public bool IsDeleted { get; set; } = false;
+        public double Weight { get; set; }
+        public double Length { get; set; }
+        public double Width { get; set; }
+        public double Height { get; set; }
 
         public byte[]? Version { get; set; }
         public virtual ICollection<ProductVariant> Variants { get; set; } = new List<ProductVariant>();

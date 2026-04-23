@@ -106,7 +106,11 @@ namespace Ecommerce.Application.Features.Cart.Queries
                                 p.Price,
                                 p.Description,
                                 p.Stock,
-                                p.Category.Name
+                                p.Category.Name,
+                                p.Weight,
+                                p.Length,
+                                p.Width,
+                                p.Height
                             ))
                             .FirstOrDefaultAsync(cancellationToken);
 

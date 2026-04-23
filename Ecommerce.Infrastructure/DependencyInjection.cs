@@ -59,8 +59,15 @@ namespace Ecommerce.Infrastructure
             services.AddScoped<ICurrentUserService, CurrentUserService>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IPromotionEngine, PromotionEngine>();
+            services.AddHttpClient<IShippingService, AhamoveService>(client =>
+            {
+                client.BaseAddress = new Uri("https://partner-apistg.ahamove.com/");
+
+                //client.Timeout = TimeSpan.FromSeconds(30);
+            });
             //services.AddHttpClient<IPaymentService, ZaloPayService>();
-            services.Configure<Ecommerce.Infrastructure.Services.PayOSOptions>(configuration.GetSection("PayOS"));
+            services.Configure<AhamoveSettings>(configuration.GetSection("AhamoveSettings"));
+            services.Configure<Options.PayOSOptions>(configuration.GetSection("PayOS"));
 
             var clientId = configuration["PayOS:ClientId"] ?? throw new Exception("PayOS ClientId is missing in appsettings.json");
             var apiKey = configuration["PayOS:ApiKey"] ?? throw new Exception("PayOS ApiKey is missing in appsettings.json");

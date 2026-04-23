@@ -20,7 +20,8 @@ namespace Ecommerce.Application.Features.PayOS.Commands
         IUnitOfWork unitOfWork,
         PayOSClient payOSClient,
         IHubContext<PaymentHub> hubContext,
-        ILogger<PayOSWebhookCommandHandler> logger) : IRequestHandler<PayOSWebhookCommand, object>
+        ILogger<PayOSWebhookCommandHandler> logger,
+        IShippingService shippingService) : IRequestHandler<PayOSWebhookCommand, object>
     {
         public async Task<object> Handle(PayOSWebhookCommand request, CancellationToken cancellationToken)
         {
@@ -57,26 +58,40 @@ namespace Ecommerce.Application.Features.PayOS.Commands
 
                 order.PaymentStatus = PaymentStatus.Paid;
                 order.Status = OrderStatus.Processing;
-                /*
-                foreach (var item in order.OrderItems)
+                try
                 {
-                    var product = await unitOfWork.Products.FindAsync(new object[] { item.ProductId }, cancellationToken);
-                    if (product != null)
+                    logger.LogInformation("PayOS payment confirmed. Initiating Ahamove booking for OrderId: {OrderId}", order.Id);
+
+                    var shipResult = await shippingService.CreateShipmentAsync(order);
+
+                    if (shipResult.IsSuccess)
                     {
-                        product.StockQuantity -= item.Quantity;
+                        var newShipment = new Domain.Entities.Shipment
+                        {
+                            OrderId = order.Id,
+                            TrackingNumber = shipResult.Data.TrackingNumber,
+                            PartnerCode = "AHAMOVE",
+                            ServiceId = "SGN-BIKE",
+                            Fee = shipResult.Data.Fee,
+                            CodAmount = 0,
+
+                            Status = ShipmentStatus.Idle,
+                        };
+
+                        order.ShippingFee = shipResult.Data.Fee;
+
+                        await unitOfWork.Shipments.AddAsync(newShipment, cancellationToken);
+                        logger.LogInformation("Ahamove shipment booked successfully via Webhook! Tracking Number: {Tracking}", newShipment.TrackingNumber);
+                    }
+                    else
+                    {
+                        logger.LogError("Ahamove booking failed for OrderId {OrderId}: {Message}", order.Id, shipResult.Message);
                     }
                 }
-
-                var shipment = new Domain.Entities.Shipment
+                catch (Exception ex)
                 {
-                    OrderId = order.Id,
-                    TrackingNumber = "GHN-" + DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                    ShippingProvider = "GiaoHangNhanh",
-                    Status = ShipmentStatus.ReadyToPick,
-                    EstimatedDeliveryDate = DateTime.UtcNow.AddDays(3)
-                };
-                await unitOfWork.Shipments.AddAsync(shipment, cancellationToken);
-                */
+                    logger.LogError(ex, "Payment succeeded but Ahamove booking failed for OrderId {OrderId}", order.Id);
+                }
 
                 await unitOfWork.SaveChangesAsync(cancellationToken);
                 await unitOfWork.CommitTransactionAsync(cancellationToken);
